@@ -1,13 +1,13 @@
-﻿/* This file is part of libWiiSharp
+﻿/* This file is part of LibWiiSharpCore
  * Copyright (C) 2009 Leathl
  * Copyright (C) 2020 - 2022 TheShadowEevee, Github Contributors
- * 
- * libWiiSharp is free software: you can redistribute it and/or
+ *
+ * LibWiiSharpCore is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * libWiiSharp is distributed in the hope that it will be
+ * LibWiiSharpCore is distributed in the hope that it will be
  * useful, but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -16,11 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.IO;
 using System.Security.Cryptography;
 
-namespace libWiiSharp
+namespace LibWiiSharpCore
 {
     public class CertificateChain : IDisposable
     {
@@ -81,8 +79,8 @@ namespace libWiiSharp
         /// <returns></returns>
         public static CertificateChain Load(byte[] certFile)
         {
-            CertificateChain certificateChain = new CertificateChain();
-            MemoryStream memoryStream = new MemoryStream(certFile);
+            CertificateChain certificateChain = new();
+            MemoryStream memoryStream = new(certFile);
             try
             {
                 certificateChain.ParseCert(memoryStream);
@@ -151,7 +149,9 @@ namespace libWiiSharp
                 throw;
             }
             memoryStream2.Dispose();
-            return certificateChain.CertsComplete ? certificateChain : throw new Exception("Couldn't locate all certs!");
+            return certificateChain.CertsComplete
+                ? certificateChain
+                : throw new Exception("Couldn't locate all certs!");
         }
 
         /// <summary>
@@ -419,7 +419,7 @@ namespace libWiiSharp
                 {
                     tik.Seek(num, SeekOrigin.Begin);
                     byte[] array = new byte[1024];
-                    tik.Read(array, 0, array.Length);
+                    tik.ReadExactly(array);
                     FireDebug("   Checking for Certificate CA...");
                     if (IsCertCa(array) && !certsComplete[1])
                     {
@@ -453,9 +453,7 @@ namespace libWiiSharp
                         }
                     }
                 }
-                catch
-                {
-                }
+                catch { }
                 num += 768;
             }
             FireDebug("Scanning Ticket for Certificates Finished...");
@@ -466,7 +464,7 @@ namespace libWiiSharp
             FireDebug("Scanning TMD for Certificates...");
             byte[] buffer = new byte[2];
             tmd.Seek(478L, SeekOrigin.Begin);
-            tmd.Read(buffer, 0, 2);
+            tmd.ReadExactly(buffer);
             int num = 484 + Shared.Swap(BitConverter.ToUInt16(buffer, 0)) * 36;
             for (int index = 0; index < 3; ++index)
             {
@@ -475,7 +473,7 @@ namespace libWiiSharp
                 {
                     tmd.Seek(num, SeekOrigin.Begin);
                     byte[] array = new byte[1024];
-                    tmd.Read(array, 0, array.Length);
+                    tmd.ReadExactly(array);
                     FireDebug("   Checking for Certificate CA...");
                     if (IsCertCa(array) && !certsComplete[1])
                     {
@@ -509,9 +507,7 @@ namespace libWiiSharp
                         }
                     }
                 }
-                catch
-                {
-                }
+                catch { }
                 num += 768;
             }
             FireDebug("Scanning TMD for Certificates Finished...");
@@ -529,7 +525,12 @@ namespace libWiiSharp
                 Array.Resize<byte>(ref part, 768);
             }
 
-            return part[388] == 88 && part[389] == 83 && Shared.CompareByteArrays(sha.ComputeHash(part), Shared.HexStringToByteArray("09787045037121477824BC6A3E5E076156573F8A"));
+            return part[388] == 88
+                && part[389] == 83
+                && Shared.CompareByteArrays(
+                    sha.ComputeHash(part),
+                    Shared.HexStringToByteArray("09787045037121477824BC6A3E5E076156573F8A")
+                );
         }
 
         private bool IsCertCa(byte[] part)
@@ -544,7 +545,12 @@ namespace libWiiSharp
                 Array.Resize<byte>(ref part, 1024);
             }
 
-            return part[644] == 67 && part[645] == 65 && Shared.CompareByteArrays(sha.ComputeHash(part), Shared.HexStringToByteArray("5B7D3EE28706AD8DA2CBD5A6B75C15D0F9B6F318"));
+            return part[644] == 67
+                && part[645] == 65
+                && Shared.CompareByteArrays(
+                    sha.ComputeHash(part),
+                    Shared.HexStringToByteArray("5B7D3EE28706AD8DA2CBD5A6B75C15D0F9B6F318")
+                );
         }
 
         private bool IsCertCp(byte[] part)
@@ -559,7 +565,12 @@ namespace libWiiSharp
                 Array.Resize<byte>(ref part, 768);
             }
 
-            return part[388] == 67 && part[389] == 80 && Shared.CompareByteArrays(sha.ComputeHash(part), Shared.HexStringToByteArray("6824D6DA4C25184F0D6DAF6EDB9C0FC57522A41C"));
+            return part[388] == 67
+                && part[389] == 80
+                && Shared.CompareByteArrays(
+                    sha.ComputeHash(part),
+                    Shared.HexStringToByteArray("6824D6DA4C25184F0D6DAF6EDB9C0FC57522A41C")
+                );
         }
         #endregion
 

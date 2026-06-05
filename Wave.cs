@@ -1,13 +1,13 @@
-﻿/* This file is part of libWiiSharp
+﻿/* This file is part of LibWiiSharpCore
  * Copyright (C) 2009 Leathl
  * Copyright (C) 2020 - 2022 TheShadowEevee, Github Contributors
- * 
- * libWiiSharp is free software: you can redistribute it and/or
+ *
+ * LibWiiSharpCore is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * libWiiSharp is distributed in the hope that it will be
+ * LibWiiSharpCore is distributed in the hope that it will be
  * useful, but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -16,11 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-
-namespace libWiiSharp
+namespace LibWiiSharpCore
 {
     public class Wave : IDisposable
     {
@@ -47,7 +43,8 @@ namespace libWiiSharp
 
         public byte[] SampleData => data.Data;
 
-        public int PlayLength => (int)(data.DataSize / fmt.NumChannels / (fmt.BitsPerSample / 8) / fmt.SampleRate);
+        public int PlayLength =>
+            (int)(data.DataSize / fmt.NumChannels / (fmt.BitsPerSample / 8) / fmt.SampleRate);
 
         public Wave(string pathToFile)
         {
@@ -142,7 +139,14 @@ namespace libWiiSharp
 
         private void WriteToStream(BinaryWriter writer)
         {
-            header.FileSize = (uint)(4 + (int)fmt.FmtSize + 8 + (int)data.DataSize + 8 + (hasSmpl ? (int)smpl.SmplSize + 8 : 0));
+            header.FileSize = (uint)(
+                4
+                + (int)fmt.FmtSize
+                + 8
+                + (int)data.DataSize
+                + 8
+                + (hasSmpl ? (int)smpl.SmplSize + 8 : 0)
+            );
             header.Write(writer);
             fmt.Write(writer);
             data.Write(writer);
@@ -253,7 +257,10 @@ namespace libWiiSharp
 
         public void Read(BinaryReader reader)
         {
-            fileSize = (int)Shared.Swap(reader.ReadUInt32()) == (int)headerId ? reader.ReadUInt32() : throw new Exception("Not a valid RIFF Wave file!");
+            fileSize =
+                (int)Shared.Swap(reader.ReadUInt32()) == (int)headerId
+                    ? reader.ReadUInt32()
+                    : throw new Exception("Not a valid RIFF Wave file!");
             if ((int)Shared.Swap(reader.ReadUInt32()) != (int)format)
             {
                 throw new Exception("Not a valid RIFF Wave file!");
@@ -310,7 +317,10 @@ namespace libWiiSharp
 
         public void Read(BinaryReader reader)
         {
-            fmtSize = (int)Shared.Swap(reader.ReadUInt32()) == (int)fmtId ? reader.ReadUInt32() : throw new Exception("Wrong chunk ID!");
+            fmtSize =
+                (int)Shared.Swap(reader.ReadUInt32()) == (int)fmtId
+                    ? reader.ReadUInt32()
+                    : throw new Exception("Wrong chunk ID!");
             audioFormat = reader.ReadUInt16();
             numChannels = reader.ReadUInt16();
             sampleRate = reader.ReadUInt32();
@@ -347,7 +357,10 @@ namespace libWiiSharp
 
         public void Read(BinaryReader reader)
         {
-            dataSize = (int)Shared.Swap(reader.ReadUInt32()) == (int)dataId ? reader.ReadUInt32() : throw new Exception("Wrong chunk ID!");
+            dataSize =
+                (int)Shared.Swap(reader.ReadUInt32()) == (int)dataId
+                    ? reader.ReadUInt32()
+                    : throw new Exception("Wrong chunk ID!");
             data = reader.ReadBytes((int)dataSize);
         }
     }
@@ -377,11 +390,13 @@ namespace libWiiSharp
         {
             RemoveAllLoops();
             ++numLoops;
-            smplLoops.Add(new WaveSmplLoop()
-            {
-                LoopStart = (uint)loopStartSample,
-                LoopEnd = (uint)loopEndSample
-            });
+            smplLoops.Add(
+                new WaveSmplLoop()
+                {
+                    LoopStart = (uint)loopStartSample,
+                    LoopEnd = (uint)loopEndSample,
+                }
+            );
         }
 
         public void RemoveAllLoops()
@@ -411,7 +426,10 @@ namespace libWiiSharp
 
         public void Read(BinaryReader reader)
         {
-            smplSize = (int)Shared.Swap(reader.ReadUInt32()) == (int)smplId ? reader.ReadUInt32() : throw new Exception("Wrong chunk ID!");
+            smplSize =
+                (int)Shared.Swap(reader.ReadUInt32()) == (int)smplId
+                    ? reader.ReadUInt32()
+                    : throw new Exception("Wrong chunk ID!");
             manufacturer = reader.ReadUInt32();
             product = reader.ReadUInt32();
             samplePeriod = reader.ReadUInt32();

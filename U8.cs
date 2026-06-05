@@ -1,13 +1,13 @@
-﻿/* This file is part of libWiiSharp
+﻿/* This file is part of LibWiiSharpCore
  * Copyright (C) 2009 Leathl
  * Copyright (C) 2020 - 2022 TheShadowEevee, Github Contributors
- * 
- * libWiiSharp is free software: you can redistribute it and/or
+ *
+ * LibWiiSharpCore is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * libWiiSharp is distributed in the hope that it will be
+ * LibWiiSharpCore is distributed in the hope that it will be
  * useful, but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -16,14 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace libWiiSharp
+namespace LibWiiSharpCore
 {
     public enum U8_NodeType : ushort
     {
@@ -370,8 +367,14 @@ namespace libWiiSharp
             FireDebug("   Updating Rootnode...");
             rootNode.SizeOfData = (uint)(u8Nodes.Count + 1);
             MemoryStream memoryStream = new MemoryStream();
-            memoryStream.Seek(u8Header.OffsetToRootNode + (u8Nodes.Count + 1) * 12, SeekOrigin.Begin);
-            FireDebug("   Writing String Table... (Offset: 0x{0})", (object)memoryStream.Position.ToString("x8").ToUpper());
+            memoryStream.Seek(
+                u8Header.OffsetToRootNode + (u8Nodes.Count + 1) * 12,
+                SeekOrigin.Begin
+            );
+            FireDebug(
+                "   Writing String Table... (Offset: 0x{0})",
+                (object)memoryStream.Position.ToString("x8").ToUpper()
+            );
             memoryStream.WriteByte(0);
             int num = (int)memoryStream.Position - 1;
             long position;
@@ -396,7 +399,10 @@ namespace libWiiSharp
                 FireProgress((index + 1) * 100 / u8Nodes.Count);
                 if (u8Nodes[index].Type == U8_NodeType.File)
                 {
-                    memoryStream.Seek(Shared.AddPadding((int)memoryStream.Position, 32), SeekOrigin.Begin);
+                    memoryStream.Seek(
+                        Shared.AddPadding((int)memoryStream.Position, 32),
+                        SeekOrigin.Begin
+                    );
                     object[] objArray = new object[3];
                     position = memoryStream.Position;
                     objArray[0] = position.ToString("x8").ToUpper();
@@ -456,7 +462,10 @@ namespace libWiiSharp
                 writeStream.Seek(0L, SeekOrigin.Begin);
                 Headers.IMD5.Create(numArray).Write(writeStream);
             }
-            else if (headerType == Headers.HeaderType.IMET || headerType == Headers.HeaderType.ShortIMET)
+            else if (
+                headerType == Headers.HeaderType.IMET
+                || headerType == Headers.HeaderType.ShortIMET
+            )
             {
                 FireDebug("   Adding IMET Header...");
                 ((Headers.IMET)header).IconSize = (uint)iconSize;
@@ -488,7 +497,9 @@ namespace libWiiSharp
                 if (u8Nodes[index2].Type == U8_NodeType.Directory)
                 {
                     FireDebug("    -> Directory: \"{0}\"", (object)stringTable[index2]);
-                    if (strArray[index1][strArray[index1].Length - 1] != Path.DirectorySeparatorChar)
+                    if (
+                        strArray[index1][strArray[index1].Length - 1] != Path.DirectorySeparatorChar
+                    )
                     {
                         // ISSUE: explicit reference operation
                         strArray[index1] += Path.DirectorySeparatorChar.ToString();
@@ -502,7 +513,12 @@ namespace libWiiSharp
                 {
                     FireDebug("    -> File: \"{0}\"", (object)stringTable[index2]);
                     FireDebug("    -> Size: {0} bytes", (object)data[index2].Length);
-                    using FileStream fileStream = new FileStream(strArray[index1] + Path.DirectorySeparatorChar.ToString() + stringTable[index2], FileMode.Create);
+                    using FileStream fileStream = new FileStream(
+                        strArray[index1]
+                            + Path.DirectorySeparatorChar.ToString()
+                            + stringTable[index2],
+                        FileMode.Create
+                    );
                     fileStream.Write(data[index2], 0, data[index2].Length);
                 }
                 while (index1 > 0 && numArray[index1] == index2 + 2)
@@ -532,23 +548,34 @@ namespace libWiiSharp
                 byte[] buffer = new byte[u8File.Length];
                 u8File.Read(buffer, 0, buffer.Length);
                 MD5 md5 = MD5.Create();
-                byte[] hash1 = md5.ComputeHash(buffer, (int)this.headerType, (int)((int)u8File.Length - this.headerType));
+                byte[] hash1 = md5.ComputeHash(
+                    buffer,
+                    (int)this.headerType,
+                    (int)((int)u8File.Length - this.headerType)
+                );
                 md5.Clear();
                 byte[] hash2 = ((Headers.IMD5)header).Hash;
                 if (!Shared.CompareByteArrays(hash1, hash2))
                 {
                     FireDebug("/!\\ /!\\ /!\\ Hashes do not match /!\\ /!\\ /!\\");
-                    FireWarning("Hashes of IMD5 header and file do not match! The content might be corrupted!");
+                    FireWarning(
+                        "Hashes of IMD5 header and file do not match! The content might be corrupted!"
+                    );
                 }
             }
-            else if (this.headerType == Headers.HeaderType.IMET || this.headerType == Headers.HeaderType.ShortIMET)
+            else if (
+                this.headerType == Headers.HeaderType.IMET
+                || this.headerType == Headers.HeaderType.ShortIMET
+            )
             {
                 FireDebug("   Reading IMET Header...");
                 header = Headers.IMET.Load(u8File);
                 if (!((Headers.IMET)header).HashesMatch)
                 {
                     FireDebug("/!\\ /!\\ /!\\ Hashes do not match /!\\ /!\\ /!\\");
-                    FireWarning("The hash stored in the IMET header doesn't match the headers hash! The header and/or file might be corrupted!");
+                    FireWarning(
+                        "The hash stored in the IMET header doesn't match the headers hash! The header and/or file might be corrupted!"
+                    );
                 }
             }
             FireDebug("   Checking for Lz77 Compression...");
@@ -563,24 +590,39 @@ namespace libWiiSharp
             }
             u8File.Seek((long)headerType, SeekOrigin.Begin);
             byte[] buffer1 = new byte[4];
-            FireDebug("   Reading U8 Header: Magic... (Offset: 0x{0})", (object)u8File.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Reading U8 Header: Magic... (Offset: 0x{0})",
+                (object)u8File.Position.ToString("x8").ToUpper()
+            );
             u8File.Read(buffer1, 0, 4);
             if ((int)Shared.Swap(BitConverter.ToUInt32(buffer1, 0)) != (int)u8Header.U8Magic)
             {
                 FireDebug("    -> Invalid Magic!");
                 throw new Exception("U8 Header: Invalid Magic!");
             }
-            FireDebug("   Reading U8 Header: Offset to Rootnode... (Offset: 0x{0})", (object)u8File.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Reading U8 Header: Offset to Rootnode... (Offset: 0x{0})",
+                (object)u8File.Position.ToString("x8").ToUpper()
+            );
             u8File.Read(buffer1, 0, 4);
-            if ((int)Shared.Swap(BitConverter.ToUInt32(buffer1, 0)) != (int)u8Header.OffsetToRootNode)
+            if (
+                (int)Shared.Swap(BitConverter.ToUInt32(buffer1, 0))
+                != (int)u8Header.OffsetToRootNode
+            )
             {
                 FireDebug("    -> Invalid Offset to Rootnode");
                 throw new Exception("U8 Header: Invalid Offset to Rootnode!");
             }
-            FireDebug("   Reading U8 Header: Header Size... (Offset: 0x{0})", (object)u8File.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Reading U8 Header: Header Size... (Offset: 0x{0})",
+                (object)u8File.Position.ToString("x8").ToUpper()
+            );
             u8File.Read(buffer1, 0, 4);
             u8Header.HeaderSize = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
-            FireDebug("   Reading U8 Header: Offset to Data... (Offset: 0x{0})", (object)u8File.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Reading U8 Header: Offset to Data... (Offset: 0x{0})",
+                (object)u8File.Position.ToString("x8").ToUpper()
+            );
             u8File.Read(buffer1, 0, 4);
             u8Header.OffsetToData = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
             u8File.Seek(16L, SeekOrigin.Current);
@@ -595,7 +637,9 @@ namespace libWiiSharp
             rootNode.OffsetToData = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
             u8File.Read(buffer1, 0, 4);
             rootNode.SizeOfData = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
-            int num = (int)((long)headerType + u8Header.OffsetToRootNode + rootNode.SizeOfData * 12U);
+            int num = (int)(
+                (long)headerType + u8Header.OffsetToRootNode + rootNode.SizeOfData * 12U
+            );
             int position2 = (int)u8File.Position;
             for (int index = 0; index < rootNode.SizeOfData - 1U; ++index)
             {
@@ -639,8 +683,7 @@ namespace libWiiSharp
                     {
                         break;
                     }
-                }
-                while (empty.Length <= byte.MaxValue);
+                } while (empty.Length <= byte.MaxValue);
                 FireDebug("        -> {0}", (object)empty);
                 if (u8Node.Type == U8_NodeType.File)
                 {
@@ -706,11 +749,15 @@ namespace libWiiSharp
                 {
                     FireDebug("    -> Directory");
                     u8Node.Type = U8_NodeType.Directory;
-                    u8Node.OffsetToData = (uint)Shared.CountCharsInString(theString, Path.DirectorySeparatorChar);
+                    u8Node.OffsetToData = (uint)
+                        Shared.CountCharsInString(theString, Path.DirectorySeparatorChar);
                     int num3 = u8Nodes.Count + 2;
                     for (int index2 = 0; index2 < dirContent.Length; ++index2)
                     {
-                        if (dirContent[index2].Contains(dirContent[index1] + Path.DirectorySeparatorChar))
+                        if (
+                            dirContent[index2]
+                                .Contains(dirContent[index1] + Path.DirectorySeparatorChar)
+                        )
                         {
                             ++num3;
                         }
@@ -750,7 +797,8 @@ namespace libWiiSharp
             }
             FireDebug("   Updating U8 Header...");
             u8Header.HeaderSize = (uint)((u8Nodes.Count + 1) * 12 + num1);
-            u8Header.OffsetToData = (uint)Shared.AddPadding((int)u8Header.OffsetToRootNode + (int)u8Header.HeaderSize, 32);
+            u8Header.OffsetToData = (uint)
+                Shared.AddPadding((int)u8Header.OffsetToRootNode + (int)u8Header.HeaderSize, 32);
             FireDebug("   Calculating Data Offsets...");
             for (int index = 0; index < u8Nodes.Count; ++index)
             {
@@ -793,7 +841,9 @@ namespace libWiiSharp
                 return data.Length;
             }
 
-            return data[32] == 76 && data[33] == 90 && (data[34] == 55 && data[35] == 55) ? BitConverter.ToInt32(data, 36) >> 8 : data.Length - 32;
+            return data[32] == 76 && data[33] == 90 && (data[34] == 55 && data[35] == 55)
+                ? BitConverter.ToInt32(data, 36) >> 8
+                : data.Length - 32;
         }
 
         private void AddEntry(string nodePath, byte[] fileData)
@@ -833,12 +883,16 @@ namespace libWiiSharp
                     }
                 }
             }
-            int num3 = index1 > -1 ? (int)u8Nodes[index1].SizeOfData - 2 : (rootNode.SizeOfData > 1U ? (int)rootNode.SizeOfData - 2 : -1);
+            int num3 =
+                index1 > -1
+                    ? (int)u8Nodes[index1].SizeOfData - 2
+                    : (rootNode.SizeOfData > 1U ? (int)rootNode.SizeOfData - 2 : -1);
             U8_Node u8Node = new U8_Node
             {
                 Type = fileData.Length == 0 ? U8_NodeType.Directory : U8_NodeType.File,
                 SizeOfData = fileData.Length == 0 ? (uint)(num3 + 2) : (uint)fileData.Length,
-                OffsetToData = fileData.Length == 0 ? (uint)Shared.CountCharsInString(nodePath, '/') : 0U
+                OffsetToData =
+                    fileData.Length == 0 ? (uint)Shared.CountCharsInString(nodePath, '/') : 0U,
             };
             stringTable.Insert(num3 + 1, strArray[strArray.Length - 1]);
             u8Nodes.Insert(num3 + 1, u8Node);
@@ -1044,5 +1098,4 @@ namespace libWiiSharp
             writeStream.Write(BitConverter.GetBytes(Shared.Swap(sizeOfData)), 0, 4);
         }
     }
-
 }

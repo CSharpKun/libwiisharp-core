@@ -1,13 +1,13 @@
-﻿/* This file is part of libWiiSharp
+﻿/* This file is part of LibWiiSharpCore
  * Copyright (C) 2009 Leathl
  * Copyright (C) 2020 - 2022 TheShadowEevee, Github Contributors
- * 
- * libWiiSharp is free software: you can redistribute it and/or
+ *
+ * LibWiiSharpCore is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * libWiiSharp is distributed in the hope that it will be
+ * LibWiiSharpCore is distributed in the hope that it will be
  * useful, but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -16,11 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-
-namespace libWiiSharp
+namespace LibWiiSharpCore
 {
     public class Brlan
     {
@@ -72,7 +68,11 @@ namespace libWiiSharp
                     string[] a = new string[0];
                     for (int index2 = 0; index2 < u8.Nodes.Count; ++index2)
                     {
-                        if (u8.StringTable[index2].ToLower() == str + "_start.brlan" || u8.StringTable[index2].ToLower() == str + "_loop.brlan" || u8.StringTable[index2].ToLower() == str + ".brlan")
+                        if (
+                            u8.StringTable[index2].ToLower() == str + "_start.brlan"
+                            || u8.StringTable[index2].ToLower() == str + "_loop.brlan"
+                            || u8.StringTable[index2].ToLower() == str + ".brlan"
+                        )
                         {
                             a = Shared.MergeStringArrays(a, GetBrlanTpls(u8.Data[index2]));
                         }

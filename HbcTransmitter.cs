@@ -1,13 +1,13 @@
-﻿/* This file is part of libWiiSharp
+﻿/* This file is part of LibWiiSharpCore
  * Copyright (C) 2009 Leathl
  * Copyright (C) 2020 - 2022 TheShadowEevee, Github Contributors
- * 
- * libWiiSharp is free software: you can redistribute it and/or
+ *
+ * LibWiiSharpCore is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * libWiiSharp is distributed in the hope that it will be
+ * LibWiiSharpCore is distributed in the hope that it will be
  * useful, but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -16,13 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
 using System.ComponentModel;
-using System.IO;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 
-namespace libWiiSharp
+namespace LibWiiSharpCore
 {
     public enum Protocol
     {
@@ -30,10 +28,12 @@ namespace libWiiSharp
         /// Will preconfigure all settings for HBC to 1.0.5 (HAXX).
         /// </summary>
         HAXX = 0,
+
         /// <summary>
         /// Will preconfigure all settings for HBC from 1.0.5 (JODI).
         /// </summary>
         JODI = 1,
+
         /// <summary>
         /// Remember to define your custom settings.
         /// </summary>
@@ -52,6 +52,7 @@ namespace libWiiSharp
         private bool compress;
         private string ipAddress;
         private int port = 4299;
+
         //private string lastErrorMessage = string.Empty;
         private readonly Protocol protocol;
         private TcpClient tcpClient;
@@ -325,8 +326,7 @@ namespace libWiiSharp
                     FireProgress(++num1 * 100 / num2);
                     nwStream.Write(buffer2, offset, Blocksize);
                     offset += Blocksize;
-                }
-                while (num1 < num2);
+                } while (num1 < num2);
                 if (num3 > 0)
                 {
                     nwStream.Write(buffer2, offset, buffer2.Length - offset);
@@ -362,7 +362,8 @@ namespace libWiiSharp
             nwStream.Close();
             tcpClient.Close();
             transmittedLength = buffer2.Length;
-            compressionRatio = !compress || fileData.Length == 0 ? 0 : buffer2.Length * 100 / fileData.Length;
+            compressionRatio =
+                !compress || fileData.Length == 0 ? 0 : buffer2.Length * 100 / fileData.Length;
             FireDebug("Transmitting {0} to {1}:{2} Finished...", fileName, ipAddress, port);
             return true;
         }
@@ -407,20 +408,29 @@ namespace libWiiSharp
     {
         [DllImport("zlib1.dll")]
         private static extern ZlibWrapper.ZLibError Compress2(
-          byte[] dest,
-          ref int destLength,
-          byte[] source,
-          int sourceLength,
-          int level);
+            byte[] dest,
+            ref int destLength,
+            byte[] source,
+            int sourceLength,
+            int level
+        );
 
         public static byte[] Compress(byte[] inFile)
         {
             byte[] array = new byte[inFile.Length + 64];
             int destLength = -1;
-            ZlibWrapper.ZLibError zlibError = Compress2(array, ref destLength, inFile, inFile.Length, 6);
+            ZlibWrapper.ZLibError zlibError = Compress2(
+                array,
+                ref destLength,
+                inFile,
+                inFile.Length,
+                6
+            );
             if (zlibError != ZLibError.Z_OK || destLength <= -1 || destLength >= inFile.Length)
             {
-                throw new Exception("An error occured while compressing! Code: " + zlibError.ToString());
+                throw new Exception(
+                    "An error occured while compressing! Code: " + zlibError.ToString()
+                );
             }
 
             Array.Resize<byte>(ref array, destLength);
@@ -440,5 +450,4 @@ namespace libWiiSharp
             Z_NEED_DICT = 2,
         }
     }
-
 }

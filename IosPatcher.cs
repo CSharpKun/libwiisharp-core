@@ -1,13 +1,13 @@
-﻿/* This file is part of libWiiSharp
+﻿/* This file is part of LibWiiSharpCore
  * Copyright(C) 2009 Leathl
  * Copyright (C) 2020 - 2022 TheShadowEevee, Github Contributors
- * 
- * libWiiSharp is free software: you can redistribute it and/or
+ *
+ * LibWiiSharpCore is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * libWiiSharp is distributed in the hope that it will be
+ * LibWiiSharpCore is distributed in the hope that it will be
  * useful, but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -16,11 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
 using System.ComponentModel;
 using System.Text;
 
-namespace libWiiSharp
+namespace LibWiiSharpCore
 {
     /// <summary>
     /// An IOS patcher which can patch fakesigning, es_identify and nand permissions.
@@ -117,26 +116,20 @@ namespace libWiiSharp
         {
             FireDebug("Patching Fakesigning...");
             int num = 0;
-            byte[] second1 = new byte[4]
-            {
-                 32,
-                 7,
-                 35,
-                 162
-            };
-            byte[] second2 = new byte[4]
-            {
-                 32,
-                 7,
-                 75,
-                 11
-            };
+            byte[] second1 = new byte[4] { 32, 7, 35, 162 };
+            byte[] second2 = new byte[4] { 32, 7, 75, 11 };
             for (int firstIndex = 0; firstIndex < esModule.Length - 4; ++firstIndex)
             {
                 FireProgress((firstIndex + 1) * 100 / esModule.Length);
-                if (Shared.CompareByteArrays(esModule, firstIndex, second1, 0, 4) || Shared.CompareByteArrays(esModule, firstIndex, second2, 0, 4))
+                if (
+                    Shared.CompareByteArrays(esModule, firstIndex, second1, 0, 4)
+                    || Shared.CompareByteArrays(esModule, firstIndex, second2, 0, 4)
+                )
                 {
-                    FireDebug("   Patching at Offset: 0x{0}", (object)firstIndex.ToString("x8").ToUpper());
+                    FireDebug(
+                        "   Patching at Offset: 0x{0}",
+                        (object)firstIndex.ToString("x8").ToUpper()
+                    );
                     esModule[firstIndex + 1] = 0;
                     firstIndex += 4;
                     ++num;
@@ -150,19 +143,16 @@ namespace libWiiSharp
         {
             FireDebug("Patching ES_Identify...");
             int num = 0;
-            byte[] second = new byte[4]
-            {
-                 40,
-                 3,
-                 209,
-                 35
-            };
+            byte[] second = new byte[4] { 40, 3, 209, 35 };
             for (int firstIndex = 0; firstIndex < esModule.Length - 4; ++firstIndex)
             {
                 FireProgress((firstIndex + 1) * 100 / esModule.Length);
                 if (Shared.CompareByteArrays(esModule, firstIndex, second, 0, 4))
                 {
-                    FireDebug("   Patching at Offset: 0x{0}", (object)firstIndex.ToString("x8").ToUpper());
+                    FireDebug(
+                        "   Patching at Offset: 0x{0}",
+                        (object)firstIndex.ToString("x8").ToUpper()
+                    );
                     esModule[firstIndex + 2] = 0;
                     esModule[firstIndex + 3] = 0;
                     firstIndex += 4;
@@ -177,21 +167,16 @@ namespace libWiiSharp
         {
             FireDebug("Patching NAND Permissions...");
             int num = 0;
-            byte[] second = new byte[6]
-            {
-                 66,
-                 139,
-                 208,
-                 1,
-                 37,
-                 102
-            };
+            byte[] second = new byte[6] { 66, 139, 208, 1, 37, 102 };
             for (int firstIndex = 0; firstIndex < esModule.Length - 6; ++firstIndex)
             {
                 FireProgress((firstIndex + 1) * 100 / esModule.Length);
                 if (Shared.CompareByteArrays(esModule, firstIndex, second, 0, 6))
                 {
-                    FireDebug("   Patching at Offset: 0x{0}", (object)firstIndex.ToString("x8").ToUpper());
+                    FireDebug(
+                        "   Patching at Offset: 0x{0}",
+                        (object)firstIndex.ToString("x8").ToUpper()
+                    );
                     esModule[firstIndex + 2] = 224;
                     firstIndex += 6;
                     ++num;
@@ -205,19 +190,16 @@ namespace libWiiSharp
         {
             FireDebug("Patching VP...");
             int num = 0;
-            byte[] second = new byte[4]
-            {
-                 210,
-                 1,
-                 78,
-                 86
-            };
+            byte[] second = new byte[4] { 210, 1, 78, 86 };
             for (int firstIndex = 0; firstIndex < esModule.Length - 4; ++firstIndex)
             {
                 FireProgress((firstIndex + 1) * 100 / esModule.Length);
                 if (Shared.CompareByteArrays(esModule, firstIndex, second, 0, 4))
                 {
-                    FireDebug("   Patching for VP at Offset: 0x{0}", (object)firstIndex.ToString("x8").ToUpper());
+                    FireDebug(
+                        "   Patching for VP at Offset: 0x{0}",
+                        (object)firstIndex.ToString("x8").ToUpper()
+                    );
                     esModule[firstIndex] = 224;
                     firstIndex += 4;
                     ++num;
@@ -231,56 +213,33 @@ namespace libWiiSharp
         {
             FireDebug("Patching Fakesigning, ES_Identify, NAND Permissions and VP ...");
             int num = 0;
-            byte[] second1 = new byte[4]
-            {
-                 32,
-                 7,
-                 35,
-                 162
-            };
-            byte[] second2 = new byte[4]
-            {
-                 32,
-                 7,
-                 75,
-                 11
-            };
-            byte[] second3 = new byte[4]
-            {
-                 40,
-                 3,
-                 209,
-                 35
-            };
-            byte[] second4 = new byte[6]
-            {
-                 66,
-                 139,
-                 208,
-                 1,
-                 37,
-                 102
-            };
-            byte[] second5 = new byte[4]
-            {
-                 210,
-                 1,
-                 78,
-                 86
-            };
+            byte[] second1 = new byte[4] { 32, 7, 35, 162 };
+            byte[] second2 = new byte[4] { 32, 7, 75, 11 };
+            byte[] second3 = new byte[4] { 40, 3, 209, 35 };
+            byte[] second4 = new byte[6] { 66, 139, 208, 1, 37, 102 };
+            byte[] second5 = new byte[4] { 210, 1, 78, 86 };
             for (int firstIndex = 0; firstIndex < esModule.Length - 6; ++firstIndex)
             {
                 FireProgress((firstIndex + 1) * 100 / esModule.Length);
-                if (Shared.CompareByteArrays(esModule, firstIndex, second1, 0, 4) || Shared.CompareByteArrays(esModule, firstIndex, second2, 0, 4))
+                if (
+                    Shared.CompareByteArrays(esModule, firstIndex, second1, 0, 4)
+                    || Shared.CompareByteArrays(esModule, firstIndex, second2, 0, 4)
+                )
                 {
-                    FireDebug("   Patching Fakesigning at Offset: 0x{0}", (object)firstIndex.ToString("x8").ToUpper());
+                    FireDebug(
+                        "   Patching Fakesigning at Offset: 0x{0}",
+                        (object)firstIndex.ToString("x8").ToUpper()
+                    );
                     esModule[firstIndex + 1] = 0;
                     firstIndex += 4;
                     ++num;
                 }
                 else if (Shared.CompareByteArrays(esModule, firstIndex, second3, 0, 4))
                 {
-                    FireDebug("   Patching ES_Identify at Offset: 0x{0}", (object)firstIndex.ToString("x8").ToUpper());
+                    FireDebug(
+                        "   Patching ES_Identify at Offset: 0x{0}",
+                        (object)firstIndex.ToString("x8").ToUpper()
+                    );
                     esModule[firstIndex + 2] = 0;
                     esModule[firstIndex + 3] = 0;
                     firstIndex += 4;
@@ -288,20 +247,29 @@ namespace libWiiSharp
                 }
                 else if (Shared.CompareByteArrays(esModule, firstIndex, second4, 0, 6))
                 {
-                    FireDebug("   Patching NAND Permissions at Offset: 0x{0}", (object)firstIndex.ToString("x8").ToUpper());
+                    FireDebug(
+                        "   Patching NAND Permissions at Offset: 0x{0}",
+                        (object)firstIndex.ToString("x8").ToUpper()
+                    );
                     esModule[firstIndex + 2] = 224;
                     firstIndex += 6;
                     ++num;
                 }
                 else if (Shared.CompareByteArrays(esModule, firstIndex, second5, 0, 4))
                 {
-                    FireDebug("   Patching VP at Offset: 0x{0}", (object)firstIndex.ToString("x8").ToUpper());
+                    FireDebug(
+                        "   Patching VP at Offset: 0x{0}",
+                        (object)firstIndex.ToString("x8").ToUpper()
+                    );
                     esModule[firstIndex] = 224;
                     firstIndex += 4;
                     ++num;
                 }
             }
-            FireDebug("Patching Fakesigning, ES_Identify, NAND Permissions and VP Finished... (Patches applied: {0})", (object)num);
+            FireDebug(
+                "Patching Fakesigning, ES_Identify, NAND Permissions and VP Finished... (Patches applied: {0})",
+                (object)num
+            );
             return num;
         }
 
@@ -344,10 +312,12 @@ namespace libWiiSharp
         /// Fires the Progress of various operations
         /// </summary>
         public event EventHandler<ProgressChangedEventArgs> Progress;
+
         /// <summary>
         /// Fires debugging messages. You may write them into a log file or log textbox.
         /// </summary>
         public event EventHandler<MessageEventArgs> Debug;
+
         private void FireDebug(string debugMessage, params object[] args)
         {
             EventHandler<MessageEventArgs> debug = Debug;

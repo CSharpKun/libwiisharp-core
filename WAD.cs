@@ -1,13 +1,13 @@
-﻿/* This file is part of libWiiSharp
+﻿/* This file is part of LibWiiSharpCore
  * Copyright (C) 2009 Leathl
  * Copyright (C) 2020 - 2022 TheShadowEevee, Github Contributors
- * 
- * libWiiSharp is free software: you can redistribute it and/or
+ *
+ * LibWiiSharpCore is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * libWiiSharp is distributed in the hope that it will be
+ * LibWiiSharpCore is distributed in the hope that it will be
  * useful, but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -16,14 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace libWiiSharp
+namespace LibWiiSharpCore
 {
     public enum LowerTitleID : uint
     {
@@ -34,6 +31,7 @@ namespace libWiiSharp
         DLC = 0x00010005,
         HiddenChannels = 0x00010008,
     }
+
     public class WAD : IDisposable
     {
         private SHA1 sha = SHA1.Create();
@@ -250,7 +248,14 @@ namespace libWiiSharp
             bool flag = true;
             for (int index = 0; index < tmd.Contents.Length; ++index)
             {
-                if (!File.Exists(contentDir + Path.DirectorySeparatorChar.ToString() + tmd.Contents[index].ContentID.ToString("x8") + ".app"))
+                if (
+                    !File.Exists(
+                        contentDir
+                            + Path.DirectorySeparatorChar.ToString()
+                            + tmd.Contents[index].ContentID.ToString("x8")
+                            + ".app"
+                    )
+                )
                 {
                     flag = false;
                     break;
@@ -260,7 +265,14 @@ namespace libWiiSharp
             {
                 for (int index = 0; index < tmd.Contents.Length; ++index)
                 {
-                    if (!File.Exists(contentDir + Path.DirectorySeparatorChar.ToString() + tmd.Contents[index].Index.ToString("x8") + ".app"))
+                    if (
+                        !File.Exists(
+                            contentDir
+                                + Path.DirectorySeparatorChar.ToString()
+                                + tmd.Contents[index].Index.ToString("x8")
+                                + ".app"
+                        )
+                    )
                     {
                         throw new Exception("Couldn't find all content files!");
                     }
@@ -269,17 +281,26 @@ namespace libWiiSharp
             byte[][] contents = new byte[tmd.Contents.Length][];
             for (int index = 0; index < tmd.Contents.Length; ++index)
             {
-                string path = contentDir + Path.DirectorySeparatorChar.ToString() + (flag ? tmd.Contents[index].ContentID.ToString("x8") : tmd.Contents[index].Index.ToString("x8")) + ".app";
+                string path =
+                    contentDir
+                    + Path.DirectorySeparatorChar.ToString()
+                    + (
+                        flag
+                            ? tmd.Contents[index].ContentID.ToString("x8")
+                            : tmd.Contents[index].Index.ToString("x8")
+                    )
+                    + ".app";
                 contents[index] = File.ReadAllBytes(path);
             }
             return Create(cert, tik, tmd, contents);
         }
 
         public static WAD Create(
-          string pathToCert,
-          string pathToTik,
-          string pathToTmd,
-          string contentDir)
+            string pathToCert,
+            string pathToTik,
+            string pathToTmd,
+            string contentDir
+        )
         {
             CertificateChain cert = CertificateChain.Load(pathToCert);
             Ticket tik = Ticket.Load(pathToTik);
@@ -287,7 +308,14 @@ namespace libWiiSharp
             bool flag = true;
             for (int index = 0; index < tmd.Contents.Length; ++index)
             {
-                if (!File.Exists(contentDir + Path.DirectorySeparatorChar.ToString() + tmd.Contents[index].ContentID.ToString("x8") + ".app"))
+                if (
+                    !File.Exists(
+                        contentDir
+                            + Path.DirectorySeparatorChar.ToString()
+                            + tmd.Contents[index].ContentID.ToString("x8")
+                            + ".app"
+                    )
+                )
                 {
                     flag = false;
                     break;
@@ -297,7 +325,14 @@ namespace libWiiSharp
             {
                 for (int index = 0; index < tmd.Contents.Length; ++index)
                 {
-                    if (!File.Exists(contentDir + Path.DirectorySeparatorChar.ToString() + tmd.Contents[index].Index.ToString("x8") + ".app"))
+                    if (
+                        !File.Exists(
+                            contentDir
+                                + Path.DirectorySeparatorChar.ToString()
+                                + tmd.Contents[index].Index.ToString("x8")
+                                + ".app"
+                        )
+                    )
                     {
                         throw new Exception("Couldn't find all content files!");
                     }
@@ -306,7 +341,15 @@ namespace libWiiSharp
             byte[][] contents = new byte[tmd.Contents.Length][];
             for (int index = 0; index < tmd.Contents.Length; ++index)
             {
-                string path = contentDir + Path.DirectorySeparatorChar.ToString() + (flag ? tmd.Contents[index].ContentID.ToString("x8") : tmd.Contents[index].Index.ToString("x8")) + ".app";
+                string path =
+                    contentDir
+                    + Path.DirectorySeparatorChar.ToString()
+                    + (
+                        flag
+                            ? tmd.Contents[index].ContentID.ToString("x8")
+                            : tmd.Contents[index].Index.ToString("x8")
+                    )
+                    + ".app";
                 contents[index] = File.ReadAllBytes(path);
             }
             return Create(cert, tik, tmd, contents);
@@ -331,7 +374,7 @@ namespace libWiiSharp
                 tik = tik,
                 tmd = tmd,
                 contents = new List<byte[]>(contents),
-                wadHeader = new WAD_Header()
+                wadHeader = new WAD_Header(),
             };
             wad.wadHeader.TmdSize = (uint)(484 + tmd.Contents.Length * 36);
             int num1 = 0;
@@ -398,7 +441,14 @@ namespace libWiiSharp
             bool flag = true;
             for (int index = 0; index < tmd.Contents.Length; ++index)
             {
-                if (!File.Exists(contentDir + Path.DirectorySeparatorChar.ToString() + tmd.Contents[index].ContentID.ToString("x8") + ".app"))
+                if (
+                    !File.Exists(
+                        contentDir
+                            + Path.DirectorySeparatorChar.ToString()
+                            + tmd.Contents[index].ContentID.ToString("x8")
+                            + ".app"
+                    )
+                )
                 {
                     flag = false;
                     break;
@@ -408,7 +458,14 @@ namespace libWiiSharp
             {
                 for (int index = 0; index < tmd.Contents.Length; ++index)
                 {
-                    if (!File.Exists(contentDir + Path.DirectorySeparatorChar.ToString() + tmd.Contents[index].Index.ToString("x8") + ".app"))
+                    if (
+                        !File.Exists(
+                            contentDir
+                                + Path.DirectorySeparatorChar.ToString()
+                                + tmd.Contents[index].Index.ToString("x8")
+                                + ".app"
+                        )
+                    )
                     {
                         throw new Exception("Couldn't find all content files!");
                     }
@@ -417,17 +474,26 @@ namespace libWiiSharp
             byte[][] contents = new byte[tmd.Contents.Length][];
             for (int index = 0; index < tmd.Contents.Length; ++index)
             {
-                string path = contentDir + Path.DirectorySeparatorChar.ToString() + (flag ? tmd.Contents[index].ContentID.ToString("x8") : tmd.Contents[index].Index.ToString("x8")) + ".app";
+                string path =
+                    contentDir
+                    + Path.DirectorySeparatorChar.ToString()
+                    + (
+                        flag
+                            ? tmd.Contents[index].ContentID.ToString("x8")
+                            : tmd.Contents[index].Index.ToString("x8")
+                    )
+                    + ".app";
                 contents[index] = File.ReadAllBytes(path);
             }
             CreateNew(cert, tik, tmd, contents);
         }
 
         public void CreateNew(
-          string pathToCert,
-          string pathToTik,
-          string pathToTmd,
-          string contentDir)
+            string pathToCert,
+            string pathToTik,
+            string pathToTmd,
+            string contentDir
+        )
         {
             CertificateChain cert = CertificateChain.Load(pathToCert);
             Ticket tik = Ticket.Load(pathToTik);
@@ -435,7 +501,14 @@ namespace libWiiSharp
             bool flag = true;
             for (int index = 0; index < tmd.Contents.Length; ++index)
             {
-                if (!File.Exists(contentDir + Path.DirectorySeparatorChar.ToString() + tmd.Contents[index].ContentID.ToString("x8") + ".app"))
+                if (
+                    !File.Exists(
+                        contentDir
+                            + Path.DirectorySeparatorChar.ToString()
+                            + tmd.Contents[index].ContentID.ToString("x8")
+                            + ".app"
+                    )
+                )
                 {
                     flag = false;
                     break;
@@ -445,7 +518,14 @@ namespace libWiiSharp
             {
                 for (int index = 0; index < tmd.Contents.Length; ++index)
                 {
-                    if (!File.Exists(contentDir + Path.DirectorySeparatorChar.ToString() + tmd.Contents[index].Index.ToString("x8") + ".app"))
+                    if (
+                        !File.Exists(
+                            contentDir
+                                + Path.DirectorySeparatorChar.ToString()
+                                + tmd.Contents[index].Index.ToString("x8")
+                                + ".app"
+                        )
+                    )
                     {
                         throw new Exception("Couldn't find all content files!");
                     }
@@ -454,7 +534,15 @@ namespace libWiiSharp
             byte[][] contents = new byte[tmd.Contents.Length][];
             for (int index = 0; index < tmd.Contents.Length; ++index)
             {
-                string path = contentDir + Path.DirectorySeparatorChar.ToString() + (flag ? tmd.Contents[index].ContentID.ToString("x8") : tmd.Contents[index].Index.ToString("x8")) + ".app";
+                string path =
+                    contentDir
+                    + Path.DirectorySeparatorChar.ToString()
+                    + (
+                        flag
+                            ? tmd.Contents[index].ContentID.ToString("x8")
+                            : tmd.Contents[index].Index.ToString("x8")
+                    )
+                    + ".app";
                 contents[index] = File.ReadAllBytes(path);
             }
             CreateNew(cert, tik, tmd, contents);
@@ -471,10 +559,7 @@ namespace libWiiSharp
             this.tik = tik;
             this.tmd = tmd;
             this.contents = new List<byte[]>(contents);
-            wadHeader = new WAD_Header
-            {
-                TmdSize = (uint)(484 + tmd.Contents.Length * 36)
-            };
+            wadHeader = new WAD_Header { TmdSize = (uint)(484 + tmd.Contents.Length * 36) };
             int num = 0;
             for (int index = 0; index < contents.Length - 1; ++index)
             {
@@ -546,13 +631,19 @@ namespace libWiiSharp
 
         public void ChangeTitleID(LowerTitleID lowerID, string upperID)
         {
-            uint num1 = upperID.Length == 4 ? BitConverter.ToUInt32(new byte[4]
-            {
-        (byte) upperID[3],
-        (byte) upperID[2],
-        (byte) upperID[1],
-        (byte) upperID[0]
-            }, 0) : throw new Exception("Upper Title ID must be 4 characters long!");
+            uint num1 =
+                upperID.Length == 4
+                    ? BitConverter.ToUInt32(
+                        new byte[4]
+                        {
+                            (byte)upperID[3],
+                            (byte)upperID[2],
+                            (byte)upperID[1],
+                            (byte)upperID[0],
+                        },
+                        0
+                    )
+                    : throw new Exception("Upper Title ID must be 4 characters long!");
             ulong num2 = (ulong)lowerID << 32 | num1;
             tik.TitleID = num2;
             tmd.TitleID = num2;
@@ -607,19 +698,27 @@ namespace libWiiSharp
             if (!hasBanner)
             {
                 return;
-            } ((Headers.IMET)bannerApp.Header).ChangeTitles(newTitles);
+            }
+            ((Headers.IMET)bannerApp.Header).ChangeTitles(newTitles);
         }
 
-        public void AddContent(byte[] newContent, int contentID, int index, ContentType type = ContentType.Normal)
+        public void AddContent(
+            byte[] newContent,
+            int contentID,
+            int index,
+            ContentType type = ContentType.Normal
+        )
         {
-            tmd.AddContent(new TMD_Content()
-            {
-                ContentID = (uint)contentID,
-                Index = (ushort)index,
-                Type = type,
-                Size = (ulong)newContent.Length,
-                Hash = sha.ComputeHash(newContent)
-            });
+            tmd.AddContent(
+                new TMD_Content()
+                {
+                    ContentID = (uint)contentID,
+                    Index = (ushort)index,
+                    Type = type,
+                    Size = (ulong)newContent.Length,
+                    Hash = sha.ComputeHash(newContent),
+                }
+            );
             contents.Add(newContent);
             wadHeader.TmdSize = (uint)(484 + tmd.NumOfContents * 36);
         }
@@ -724,23 +823,40 @@ namespace libWiiSharp
                 {
                     for (int index = 0; index < bannerApp.Nodes.Count; ++index)
                     {
-                        if (bannerApp.StringTable[index].ToLower() == "icon.bin" || bannerApp.StringTable[index].ToLower() == "banner.bin")
+                        if (
+                            bannerApp.StringTable[index].ToLower() == "icon.bin"
+                            || bannerApp.StringTable[index].ToLower() == "banner.bin"
+                        )
                         {
-                            if (!Lz77.IsLz77Compressed(bannerApp.Data[index]) && lz77CompressBannerAndIcon)
+                            if (
+                                !Lz77.IsLz77Compressed(bannerApp.Data[index])
+                                && lz77CompressBannerAndIcon
+                            )
                             {
-                                FireDebug("   Compressing {0}...", (object)bannerApp.StringTable[index]);
+                                FireDebug(
+                                    "   Compressing {0}...",
+                                    (object)bannerApp.StringTable[index]
+                                );
                                 byte[] file = new byte[bannerApp.Data[index].Length - 32];
                                 Array.Copy(bannerApp.Data[index], 32, file, 0, file.Length);
                                 byte[] numArray = Headers.IMD5.AddHeader(new Lz77().Compress(file));
                                 bannerApp.Data[index] = numArray;
                                 bannerApp.Nodes[index].SizeOfData = (uint)numArray.Length;
                             }
-                            else if (Lz77.IsLz77Compressed(bannerApp.Data[index]) && lz77DecompressBannerAndIcon)
+                            else if (
+                                Lz77.IsLz77Compressed(bannerApp.Data[index])
+                                && lz77DecompressBannerAndIcon
+                            )
                             {
-                                FireDebug("   Decompressing {0}...", (object)bannerApp.StringTable[index]);
+                                FireDebug(
+                                    "   Decompressing {0}...",
+                                    (object)bannerApp.StringTable[index]
+                                );
                                 byte[] file = new byte[bannerApp.Data[index].Length - 32];
                                 Array.Copy(bannerApp.Data[index], 32, file, 0, file.Length);
-                                byte[] numArray = Headers.IMD5.AddHeader(new Lz77().Decompress(file));
+                                byte[] numArray = Headers.IMD5.AddHeader(
+                                    new Lz77().Decompress(file)
+                                );
                                 bannerApp.Data[index] = numArray;
                                 bannerApp.Nodes[index].SizeOfData = (uint)numArray.Length;
                             }
@@ -768,18 +884,30 @@ namespace libWiiSharp
             wadHeader.TmdSize = (uint)(484 + tmd.NumOfContents * 36);
             FireDebug("   Updating TMD Contents...");
             tmd.UpdateContents(contents.ToArray());
-            FireDebug("   Writing Wad Header... (Offset: 0x{0})", (object)writeStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing Wad Header... (Offset: 0x{0})",
+                (object)writeStream.Position.ToString("x8").ToUpper()
+            );
             writeStream.Seek(0L, SeekOrigin.Begin);
             wadHeader.Write(writeStream);
-            FireDebug("   Writing Certificate Chain... (Offset: 0x{0})", (object)writeStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing Certificate Chain... (Offset: 0x{0})",
+                (object)writeStream.Position.ToString("x8").ToUpper()
+            );
             writeStream.Seek(Shared.AddPadding((int)writeStream.Position), SeekOrigin.Begin);
             byte[] byteArray1 = cert.ToByteArray();
             writeStream.Write(byteArray1, 0, byteArray1.Length);
-            FireDebug("   Writing Ticket... (Offset: 0x{0})", (object)writeStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing Ticket... (Offset: 0x{0})",
+                (object)writeStream.Position.ToString("x8").ToUpper()
+            );
             writeStream.Seek(Shared.AddPadding((int)writeStream.Position), SeekOrigin.Begin);
             byte[] byteArray2 = tik.ToByteArray();
             writeStream.Write(byteArray2, 0, byteArray2.Length);
-            FireDebug("   Writing TMD... (Offset: 0x{0})", (object)writeStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing TMD... (Offset: 0x{0})",
+                (object)writeStream.Position.ToString("x8").ToUpper()
+            );
             writeStream.Seek(Shared.AddPadding((int)writeStream.Position), SeekOrigin.Begin);
             byte[] byteArray3 = tmd.ToByteArray();
             writeStream.Write(byteArray3, 0, byteArray3.Length);
@@ -788,18 +916,46 @@ namespace libWiiSharp
             {
                 writeStream.Seek(Shared.AddPadding((int)writeStream.Position), SeekOrigin.Begin);
                 FireProgress((index + 1) * 100 / contents.Count);
-                FireDebug("   Writing Content #{1} of {2}... (Offset: 0x{0})", writeStream.Position.ToString("x8").ToUpper(), index + 1, contents.Count);
-                FireDebug("    -> Content ID: 0x{0}", (object)tmd.Contents[sortedContentList[index].Index].ContentID.ToString("x8"));
-                FireDebug("    -> Index: 0x{0}", (object)tmd.Contents[sortedContentList[index].Index].Index.ToString("x4"));
-                FireDebug("    -> Type: 0x{0} ({1})", ((ushort)tmd.Contents[sortedContentList[index].Index].Type).ToString("x4"), tmd.Contents[sortedContentList[index].Index].Type.ToString());
-                FireDebug("    -> Size: {0} bytes", (object)tmd.Contents[sortedContentList[index].Index].Size);
-                FireDebug("    -> Hash: {0}", (object)Shared.ByteArrayToString(tmd.Contents[sortedContentList[index].Index].Hash));
-                byte[] buffer = EncryptContent(contents[sortedContentList[index].Index], sortedContentList[index].Index);
+                FireDebug(
+                    "   Writing Content #{1} of {2}... (Offset: 0x{0})",
+                    writeStream.Position.ToString("x8").ToUpper(),
+                    index + 1,
+                    contents.Count
+                );
+                FireDebug(
+                    "    -> Content ID: 0x{0}",
+                    (object)tmd.Contents[sortedContentList[index].Index].ContentID.ToString("x8")
+                );
+                FireDebug(
+                    "    -> Index: 0x{0}",
+                    (object)tmd.Contents[sortedContentList[index].Index].Index.ToString("x4")
+                );
+                FireDebug(
+                    "    -> Type: 0x{0} ({1})",
+                    ((ushort)tmd.Contents[sortedContentList[index].Index].Type).ToString("x4"),
+                    tmd.Contents[sortedContentList[index].Index].Type.ToString()
+                );
+                FireDebug(
+                    "    -> Size: {0} bytes",
+                    (object)tmd.Contents[sortedContentList[index].Index].Size
+                );
+                FireDebug(
+                    "    -> Hash: {0}",
+                    (object)
+                        Shared.ByteArrayToString(tmd.Contents[sortedContentList[index].Index].Hash)
+                );
+                byte[] buffer = EncryptContent(
+                    contents[sortedContentList[index].Index],
+                    sortedContentList[index].Index
+                );
                 writeStream.Write(buffer, 0, buffer.Length);
             }
             if (wadHeader.FooterSize != 0U)
             {
-                FireDebug("   Writing Footer... (Offset: 0x{0})", (object)writeStream.Position.ToString("x8").ToUpper());
+                FireDebug(
+                    "   Writing Footer... (Offset: 0x{0})",
+                    (object)writeStream.Position.ToString("x8").ToUpper()
+                );
                 writeStream.Seek(Shared.AddPadding((int)writeStream.Position), SeekOrigin.Begin);
                 writeStream.Write(footer, 0, footer.Length);
             }
@@ -847,16 +1003,32 @@ namespace libWiiSharp
             for (int index = 0; index < this.tmd.NumOfContents; ++index)
             {
                 FireProgress((index + 1) * 100 / this.tmd.NumOfContents);
-                FireDebug("   Saving Content #{0} of {1}: {2}.app", index + 1, this.tmd.NumOfContents, nameContentId ? this.tmd.Contents[index].ContentID.ToString("x8") : this.tmd.Contents[index].Index.ToString("x8"));
-                FireDebug("    -> Content ID: 0x{0}", (object)this.tmd.Contents[index].ContentID.ToString("x8"));
-                FireDebug("    -> Index: 0x{0}", (object)this.tmd.Contents[index].Index.ToString("x4"));
+                FireDebug(
+                    "   Saving Content #{0} of {1}: {2}.app",
+                    index + 1,
+                    this.tmd.NumOfContents,
+                    nameContentId
+                        ? this.tmd.Contents[index].ContentID.ToString("x8")
+                        : this.tmd.Contents[index].Index.ToString("x8")
+                );
+                FireDebug(
+                    "    -> Content ID: 0x{0}",
+                    (object)this.tmd.Contents[index].ContentID.ToString("x8")
+                );
+                FireDebug(
+                    "    -> Index: 0x{0}",
+                    (object)this.tmd.Contents[index].Index.ToString("x4")
+                );
                 object[] objArray = new object[2];
                 ushort num = (ushort)this.tmd.Contents[index].Type;
                 objArray[0] = num.ToString("x4");
                 objArray[1] = this.tmd.Contents[index].Type.ToString();
                 FireDebug("    -> Type: 0x{0} ({1})", objArray);
                 FireDebug("    -> Size: {0} bytes", (object)this.tmd.Contents[index].Size);
-                FireDebug("    -> Hash: {0}", (object)Shared.ByteArrayToString(this.tmd.Contents[index].Hash));
+                FireDebug(
+                    "    -> Hash: {0}",
+                    (object)Shared.ByteArrayToString(this.tmd.Contents[index].Hash)
+                );
                 string str11 = unpackDir;
                 directorySeparatorChar = Path.DirectorySeparatorChar;
                 string str12 = directorySeparatorChar.ToString();
@@ -871,7 +1043,10 @@ namespace libWiiSharp
                     str13 = this.tmd.Contents[index].ContentID.ToString("x8");
                 }
 
-                using FileStream fileStream = new FileStream(str11 + str12 + str13 + ".app", FileMode.Create);
+                using FileStream fileStream = new FileStream(
+                    str11 + str12 + str13 + ".app",
+                    FileMode.Create
+                );
                 fileStream.Write(contents[index], 0, contents[index].Length);
             }
             FireDebug("   Saving Footer: {0}.footer", (object)str1);
@@ -879,7 +1054,12 @@ namespace libWiiSharp
             directorySeparatorChar = Path.DirectorySeparatorChar;
             string str15 = directorySeparatorChar.ToString();
             string str16 = str1;
-            using (FileStream fileStream = new FileStream(str14 + str15 + str16 + ".footer", FileMode.Create))
+            using (
+                FileStream fileStream = new FileStream(
+                    str14 + str15 + str16 + ".footer",
+                    FileMode.Create
+                )
+            )
             {
                 fileStream.Write(footer, 0, footer.Length);
             }
@@ -894,7 +1074,10 @@ namespace libWiiSharp
             byte[] buffer = new byte[4];
             wadHeader = new WAD_Header();
             contents = new List<byte[]>();
-            FireDebug("   Parsing Header... (Offset: 0x{0})", (object)wadFile.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Parsing Header... (Offset: 0x{0})",
+                (object)wadFile.Position.ToString("x8").ToUpper()
+            );
             wadFile.Read(buffer, 0, 4);
             if ((int)Shared.Swap(BitConverter.ToUInt32(buffer, 0)) != (int)wadHeader.HeaderSize)
             {
@@ -910,17 +1093,26 @@ namespace libWiiSharp
             wadHeader.ContentSize = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
             wadFile.Read(buffer, 0, 4);
             wadHeader.FooterSize = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
-            FireDebug("   Parsing Certificate Chain... (Offset: 0x{0})", (object)wadFile.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Parsing Certificate Chain... (Offset: 0x{0})",
+                (object)wadFile.Position.ToString("x8").ToUpper()
+            );
             wadFile.Seek(Shared.AddPadding((int)wadFile.Position), SeekOrigin.Begin);
             byte[] numArray1 = new byte[(int)wadHeader.CertSize];
             wadFile.Read(numArray1, 0, numArray1.Length);
             cert.LoadFile(numArray1);
-            FireDebug("   Parsing Ticket... (Offset: 0x{0})", (object)wadFile.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Parsing Ticket... (Offset: 0x{0})",
+                (object)wadFile.Position.ToString("x8").ToUpper()
+            );
             wadFile.Seek(Shared.AddPadding((int)wadFile.Position), SeekOrigin.Begin);
             byte[] numArray2 = new byte[(int)wadHeader.TicketSize];
             wadFile.Read(numArray2, 0, numArray2.Length);
             tik.LoadFile(numArray2);
-            FireDebug("   Parsing TMD... (Offset: 0x{0})", (object)wadFile.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Parsing TMD... (Offset: 0x{0})",
+                (object)wadFile.Position.ToString("x8").ToUpper()
+            );
             wadFile.Seek(Shared.AddPadding((int)wadFile.Position), SeekOrigin.Begin);
             byte[] numArray3 = new byte[(int)wadHeader.TmdSize];
             wadFile.Read(numArray3, 0, numArray3.Length);
@@ -934,16 +1126,14 @@ namespace libWiiSharp
             for (int contentIndex = 0; contentIndex < tmd.NumOfContents; ++contentIndex)
             {
                 FireProgress((contentIndex + 1) * 100 / tmd.NumOfContents);
-                object[] objArray1 = new object[3]
-                {
-           contentIndex + 1,
-           tmd.NumOfContents,
-          null
-                };
+                object[] objArray1 = new object[3] { contentIndex + 1, tmd.NumOfContents, null };
                 position = wadFile.Position;
                 objArray1[2] = position.ToString("x8").ToUpper();
                 FireDebug("   Reading Content #{0} of {1}... (Offset: 0x{2})", objArray1);
-                FireDebug("    -> Content ID: 0x{0}", (object)tmd.Contents[contentIndex].ContentID.ToString("x8"));
+                FireDebug(
+                    "    -> Content ID: 0x{0}",
+                    (object)tmd.Contents[contentIndex].ContentID.ToString("x8")
+                );
                 object[] objArray2 = new object[1];
                 ushort num = tmd.Contents[contentIndex].Index;
                 objArray2[0] = num.ToString("x4");
@@ -954,13 +1144,23 @@ namespace libWiiSharp
                 objArray3[1] = tmd.Contents[contentIndex].Type.ToString();
                 FireDebug("    -> Type: 0x{0} ({1})", objArray3);
                 FireDebug("    -> Size: {0} bytes", (object)tmd.Contents[contentIndex].Size);
-                FireDebug("    -> Hash: {0}", (object)Shared.ByteArrayToString(tmd.Contents[contentIndex].Hash));
+                FireDebug(
+                    "    -> Hash: {0}",
+                    (object)Shared.ByteArrayToString(tmd.Contents[contentIndex].Hash)
+                );
                 wadFile.Seek(Shared.AddPadding((int)wadFile.Position), SeekOrigin.Begin);
-                byte[] numArray4 = new byte[Shared.AddPadding((int)tmd.Contents[contentIndex].Size, 16)];
+                byte[] numArray4 = new byte[
+                    Shared.AddPadding((int)tmd.Contents[contentIndex].Size, 16)
+                ];
                 wadFile.Read(numArray4, 0, numArray4.Length);
                 byte[] array = DecryptContent(numArray4, contentIndex);
                 Array.Resize<byte>(ref array, (int)tmd.Contents[contentIndex].Size);
-                if (!Shared.CompareByteArrays(tmd.Contents[contentIndex].Hash, sha.ComputeHash(array, 0, (int)tmd.Contents[contentIndex].Size)))
+                if (
+                    !Shared.CompareByteArrays(
+                        tmd.Contents[contentIndex].Hash,
+                        sha.ComputeHash(array, 0, (int)tmd.Contents[contentIndex].Size)
+                    )
+                )
                 {
                     FireDebug("/!\\ /!\\ /!\\ Hashes do not match /!\\ /!\\ /!\\");
                     // ISSUE: variable of a boxed type
@@ -968,7 +1168,14 @@ namespace libWiiSharp
                     string str1 = tmd.Contents[contentIndex].ContentID.ToString("x8");
                     num = tmd.Contents[contentIndex].Index;
                     string str2 = num.ToString("x4");
-                    FireWarning(string.Format("Content #{0} (Content ID: 0x{1}; Index: 0x{2}): Hashes do not match! The content might be corrupted!", local, str1, str2));
+                    FireWarning(
+                        string.Format(
+                            "Content #{0} (Content ID: 0x{1}; Index: 0x{2}): Hashes do not match! The content might be corrupted!",
+                            local,
+                            str1,
+                            str2
+                        )
+                    );
                 }
                 contents.Add(array);
                 if (tmd.Contents[contentIndex].Index == 0)
@@ -1015,12 +1222,16 @@ namespace libWiiSharp
                 KeySize = 128,
                 BlockSize = 128,
                 Key = titleKey,
-                IV = numArray
+                IV = numArray,
             };
 #pragma warning restore SYSLIB0022 // Type or member is obsolete
             ICryptoTransform decryptor = rijndaelManaged.CreateDecryptor();
             MemoryStream memoryStream = new MemoryStream(content);
-            CryptoStream cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read);
+            CryptoStream cryptoStream = new CryptoStream(
+                memoryStream,
+                decryptor,
+                CryptoStreamMode.Read
+            );
             byte[] buffer = new byte[length];
             cryptoStream.Read(buffer, 0, buffer.Length);
             cryptoStream.Dispose();
@@ -1044,12 +1255,16 @@ namespace libWiiSharp
                 KeySize = 128,
                 BlockSize = 128,
                 Key = titleKey,
-                IV = numArray
+                IV = numArray,
             };
 #pragma warning restore SYSLIB0022 // Type or member is obsolete
             ICryptoTransform encryptor = rijndaelManaged.CreateEncryptor();
             MemoryStream memoryStream = new MemoryStream(content);
-            CryptoStream cryptoStream = new CryptoStream(memoryStream, encryptor, CryptoStreamMode.Read);
+            CryptoStream cryptoStream = new CryptoStream(
+                memoryStream,
+                encryptor,
+                CryptoStreamMode.Read
+            );
             byte[] buffer = new byte[content.Length];
             cryptoStream.Read(buffer, 0, buffer.Length);
             cryptoStream.Dispose();
@@ -1059,7 +1274,12 @@ namespace libWiiSharp
 
         private void CreateFooterTimestamp()
         {
-            byte[] bytes = new ASCIIEncoding().GetBytes("TmStmp" + ((int)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0)).TotalSeconds).ToString());
+            byte[] bytes = new ASCIIEncoding().GetBytes(
+                "TmStmp"
+                    + (
+                        (int)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0)).TotalSeconds
+                    ).ToString()
+            );
             Array.Resize<byte>(ref bytes, 64);
             wadHeader.FooterSize = (uint)bytes.Length;
             footer = bytes;
@@ -1068,7 +1288,20 @@ namespace libWiiSharp
         private void ParseFooterTimestamp()
         {
             creationTimeUTC = new DateTime(1970, 1, 1);
-            if ((footer[0] != 67 || footer[1] != 77 || (footer[2] != 105 || footer[3] != 105) || (footer[4] != 85 || footer[5] != 84)) && (footer[0] != 84 || footer[1] != 109 || (footer[2] != 83 || footer[3] != 116) || (footer[4] != 109 || footer[5] != 112)))
+            if (
+                (
+                    footer[0] != 67
+                    || footer[1] != 77
+                    || (footer[2] != 105 || footer[3] != 105)
+                    || (footer[4] != 85 || footer[5] != 84)
+                )
+                && (
+                    footer[0] != 84
+                    || footer[1] != 109
+                    || (footer[2] != 83 || footer[3] != 116)
+                    || (footer[4] != 109 || footer[5] != 112)
+                )
+            )
             {
                 return;
             }
@@ -1155,13 +1388,29 @@ namespace libWiiSharp
         private uint footerSize = 0x00;
 
         public uint HeaderSize => headerSize;
-        public uint WadType { get => wadType; set => wadType = value; }
+        public uint WadType
+        {
+            get => wadType;
+            set => wadType = value;
+        }
         public uint CertSize => certSize;
         public uint Reserved => reserved;
         public uint TicketSize => tikSize;
-        public uint TmdSize { get => tmdSize; set => tmdSize = value; }
-        public uint ContentSize { get => contentSize; set => contentSize = value; }
-        public uint FooterSize { get => footerSize; set => footerSize = value; }
+        public uint TmdSize
+        {
+            get => tmdSize;
+            set => tmdSize = value;
+        }
+        public uint ContentSize
+        {
+            get => contentSize;
+            set => contentSize = value;
+        }
+        public uint FooterSize
+        {
+            get => footerSize;
+            set => footerSize = value;
+        }
 
         public void Write(Stream writeStream)
         {

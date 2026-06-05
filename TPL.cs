@@ -1,13 +1,13 @@
-﻿/* This file is part of libWiiSharp
+﻿/* This file is part of LibWiiSharpCore
  * Copyright (C) 2009 Leathl
  * Copyright (C) 2020 - 2022 TheShadowEevee, Github Contributors
- * 
- * libWiiSharp is free software: you can redistribute it and/or
+ *
+ * LibWiiSharpCore is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * libWiiSharp is distributed in the hope that it will be
+ * LibWiiSharpCore is distributed in the hope that it will be
  * useful, but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -20,16 +20,11 @@
 //Zetsubou by SquidMan was also a reference.
 //Thanks to the authors!
 
-using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Imaging;
-using System.IO;
 using System.Runtime.InteropServices;
 
-namespace libWiiSharp
+namespace LibWiiSharpCore
 {
-
     public enum TPL_TextureFormat
     {
         I4 = 0,
@@ -136,31 +131,36 @@ namespace libWiiSharp
         }
 
         public static TPL FromImage(
-          string pathToImage,
-          TPL_TextureFormat tplFormat,
-          TPL_PaletteFormat paletteFormat = TPL_PaletteFormat.RGB5A3)
+            string pathToImage,
+            TPL_TextureFormat tplFormat,
+            TPL_PaletteFormat paletteFormat = TPL_PaletteFormat.RGB5A3
+        )
         {
-            return FromImages(new string[1] { pathToImage }, new TPL_TextureFormat[1]
-            {
-        tplFormat
-            }, new TPL_PaletteFormat[1] { paletteFormat });
+            return FromImages(
+                new string[1] { pathToImage },
+                new TPL_TextureFormat[1] { tplFormat },
+                new TPL_PaletteFormat[1] { paletteFormat }
+            );
         }
 
         public static TPL FromImage(
-          Image img,
-          TPL_TextureFormat tplFormat,
-          TPL_PaletteFormat paletteFormat = TPL_PaletteFormat.RGB5A3)
+            Image img,
+            TPL_TextureFormat tplFormat,
+            TPL_PaletteFormat paletteFormat = TPL_PaletteFormat.RGB5A3
+        )
         {
-            return FromImages(new Image[1] { img }, new TPL_TextureFormat[1]
-            {
-        tplFormat
-            }, new TPL_PaletteFormat[1] { paletteFormat });
+            return FromImages(
+                new Image[1] { img },
+                new TPL_TextureFormat[1] { tplFormat },
+                new TPL_PaletteFormat[1] { paletteFormat }
+            );
         }
 
         public static TPL FromImages(
-          string[] imagePaths,
-          TPL_TextureFormat[] tplFormats,
-          TPL_PaletteFormat[] paletteFormats)
+            string[] imagePaths,
+            TPL_TextureFormat[] tplFormats,
+            TPL_PaletteFormat[] paletteFormats
+        )
         {
             if (tplFormats.Length < imagePaths.Length)
             {
@@ -179,9 +179,10 @@ namespace libWiiSharp
         }
 
         public static TPL FromImages(
-          Image[] images,
-          TPL_TextureFormat[] tplFormats,
-          TPL_PaletteFormat[] paletteFormats)
+            Image[] images,
+            TPL_TextureFormat[] tplFormats,
+            TPL_PaletteFormat[] paletteFormats
+        )
         {
             if (tplFormats.Length < images.Length)
             {
@@ -229,31 +230,36 @@ namespace libWiiSharp
         }
 
         public void CreateFromImage(
-          string pathToImage,
-          TPL_TextureFormat tplFormat,
-          TPL_PaletteFormat paletteFormat = TPL_PaletteFormat.RGB5A3)
+            string pathToImage,
+            TPL_TextureFormat tplFormat,
+            TPL_PaletteFormat paletteFormat = TPL_PaletteFormat.RGB5A3
+        )
         {
-            CreateFromImages(new string[1] { pathToImage }, new TPL_TextureFormat[1]
-            {
-        tplFormat
-            }, new TPL_PaletteFormat[1] { paletteFormat });
+            CreateFromImages(
+                new string[1] { pathToImage },
+                new TPL_TextureFormat[1] { tplFormat },
+                new TPL_PaletteFormat[1] { paletteFormat }
+            );
         }
 
         public void CreateFromImage(
-          Image img,
-          TPL_TextureFormat tplFormat,
-          TPL_PaletteFormat paletteFormat = TPL_PaletteFormat.RGB5A3)
+            Image img,
+            TPL_TextureFormat tplFormat,
+            TPL_PaletteFormat paletteFormat = TPL_PaletteFormat.RGB5A3
+        )
         {
-            PrivCreateFromImages(new Image[1] { img }, new TPL_TextureFormat[1]
-            {
-        tplFormat
-            }, new TPL_PaletteFormat[1] { paletteFormat });
+            PrivCreateFromImages(
+                new Image[1] { img },
+                new TPL_TextureFormat[1] { tplFormat },
+                new TPL_PaletteFormat[1] { paletteFormat }
+            );
         }
 
         public void CreateFromImages(
-          string[] imagePaths,
-          TPL_TextureFormat[] tplFormats,
-          TPL_PaletteFormat[] paletteFormats)
+            string[] imagePaths,
+            TPL_TextureFormat[] tplFormats,
+            TPL_PaletteFormat[] paletteFormats
+        )
         {
             if (tplFormats.Length < imagePaths.Length)
             {
@@ -270,9 +276,10 @@ namespace libWiiSharp
         }
 
         public void CreateFromImages(
-          Image[] images,
-          TPL_TextureFormat[] tplFormats,
-          TPL_PaletteFormat[] paletteFormats)
+            Image[] images,
+            TPL_TextureFormat[] tplFormats,
+            TPL_PaletteFormat[] paletteFormats
+        )
         {
             if (tplFormats.Length < images.Length)
             {
@@ -331,20 +338,71 @@ namespace libWiiSharp
         {
             byte[] data = tplTextureHeaders[index].TextureFormat switch
             {
-                0 => FromI4(textureData[index], tplTextureHeaders[index].TextureWidth, tplTextureHeaders[index].TextureHeight),
-                1 => FromI8(textureData[index], tplTextureHeaders[index].TextureWidth, tplTextureHeaders[index].TextureHeight),
-                2 => FromIA4(textureData[index], tplTextureHeaders[index].TextureWidth, tplTextureHeaders[index].TextureHeight),
-                3 => FromIA8(textureData[index], tplTextureHeaders[index].TextureWidth, tplTextureHeaders[index].TextureHeight),
-                4 => FromRGB565(textureData[index], tplTextureHeaders[index].TextureWidth, tplTextureHeaders[index].TextureHeight),
-                5 => FromRGB5A3(textureData[index], tplTextureHeaders[index].TextureWidth, tplTextureHeaders[index].TextureHeight),
-                6 => FromRGBA8(textureData[index], tplTextureHeaders[index].TextureWidth, tplTextureHeaders[index].TextureHeight),
-                8 => FromCI4(textureData[index], PaletteToRgba(index), tplTextureHeaders[index].TextureWidth, tplTextureHeaders[index].TextureHeight),
-                9 => FromCI8(textureData[index], PaletteToRgba(index), tplTextureHeaders[index].TextureWidth, tplTextureHeaders[index].TextureHeight),
-                10 => FromCI14X2(textureData[index], PaletteToRgba(index), tplTextureHeaders[index].TextureWidth, tplTextureHeaders[index].TextureHeight),
-                14 => FromCMP(textureData[index], tplTextureHeaders[index].TextureWidth, tplTextureHeaders[index].TextureHeight),
+                0 => FromI4(
+                    textureData[index],
+                    tplTextureHeaders[index].TextureWidth,
+                    tplTextureHeaders[index].TextureHeight
+                ),
+                1 => FromI8(
+                    textureData[index],
+                    tplTextureHeaders[index].TextureWidth,
+                    tplTextureHeaders[index].TextureHeight
+                ),
+                2 => FromIA4(
+                    textureData[index],
+                    tplTextureHeaders[index].TextureWidth,
+                    tplTextureHeaders[index].TextureHeight
+                ),
+                3 => FromIA8(
+                    textureData[index],
+                    tplTextureHeaders[index].TextureWidth,
+                    tplTextureHeaders[index].TextureHeight
+                ),
+                4 => FromRGB565(
+                    textureData[index],
+                    tplTextureHeaders[index].TextureWidth,
+                    tplTextureHeaders[index].TextureHeight
+                ),
+                5 => FromRGB5A3(
+                    textureData[index],
+                    tplTextureHeaders[index].TextureWidth,
+                    tplTextureHeaders[index].TextureHeight
+                ),
+                6 => FromRGBA8(
+                    textureData[index],
+                    tplTextureHeaders[index].TextureWidth,
+                    tplTextureHeaders[index].TextureHeight
+                ),
+                8 => FromCI4(
+                    textureData[index],
+                    PaletteToRgba(index),
+                    tplTextureHeaders[index].TextureWidth,
+                    tplTextureHeaders[index].TextureHeight
+                ),
+                9 => FromCI8(
+                    textureData[index],
+                    PaletteToRgba(index),
+                    tplTextureHeaders[index].TextureWidth,
+                    tplTextureHeaders[index].TextureHeight
+                ),
+                10 => FromCI14X2(
+                    textureData[index],
+                    PaletteToRgba(index),
+                    tplTextureHeaders[index].TextureWidth,
+                    tplTextureHeaders[index].TextureHeight
+                ),
+                14 => FromCMP(
+                    textureData[index],
+                    tplTextureHeaders[index].TextureWidth,
+                    tplTextureHeaders[index].TextureHeight
+                ),
                 _ => throw new FormatException("Unsupported Texture Format!"),
             };
-            return RgbaToImage(data, tplTextureHeaders[index].TextureWidth, tplTextureHeaders[index].TextureHeight);
+            return RgbaToImage(
+                data,
+                tplTextureHeaders[index].TextureWidth,
+                tplTextureHeaders[index].TextureHeight
+            );
         }
 
         public void ExtractTexture(string savePath)
@@ -402,19 +460,31 @@ namespace libWiiSharp
 
             for (int index = 0; index < tplHeader.NumOfTextures; ++index)
             {
-                ExtractTexture(index, saveDir + Path.DirectorySeparatorChar.ToString() + "Texture_" + index.ToString("x2") + ".png");
+                ExtractTexture(
+                    index,
+                    saveDir
+                        + Path.DirectorySeparatorChar.ToString()
+                        + "Texture_"
+                        + index.ToString("x2")
+                        + ".png"
+                );
             }
         }
 
         public void AddTexture(
-          string imagePath,
-          TPL_TextureFormat tplFormat,
-          TPL_PaletteFormat paletteFormat = TPL_PaletteFormat.RGB5A3)
+            string imagePath,
+            TPL_TextureFormat tplFormat,
+            TPL_PaletteFormat paletteFormat = TPL_PaletteFormat.RGB5A3
+        )
         {
             AddTexture(Image.FromFile(imagePath), tplFormat, paletteFormat);
         }
 
-        public void AddTexture(Image img, TPL_TextureFormat tplFormat, TPL_PaletteFormat paletteFormat = TPL_PaletteFormat.RGB5A3)
+        public void AddTexture(
+            Image img,
+            TPL_TextureFormat tplFormat,
+            TPL_PaletteFormat paletteFormat = TPL_PaletteFormat.RGB5A3
+        )
         {
             TPL_TextureEntry tplTextureEntry = new TPL_TextureEntry();
             TPL_TextureHeader tplTextureHeader = new TPL_TextureHeader();
@@ -424,9 +494,19 @@ namespace libWiiSharp
             tplTextureHeader.TextureHeight = (ushort)img.Height;
             tplTextureHeader.TextureWidth = (ushort)img.Width;
             tplTextureHeader.TextureFormat = (uint)tplFormat;
-            if (tplFormat == TPL_TextureFormat.CI4 || tplFormat == TPL_TextureFormat.CI8 || tplFormat == TPL_TextureFormat.CI14X2)
+            if (
+                tplFormat == TPL_TextureFormat.CI4
+                || tplFormat == TPL_TextureFormat.CI8
+                || tplFormat == TPL_TextureFormat.CI14X2
+            )
             {
-                ColorIndexConverter colorIndexConverter = new ColorIndexConverter(ImageToRgba(img), img.Width, img.Height, tplFormat, paletteFormat);
+                ColorIndexConverter colorIndexConverter = new ColorIndexConverter(
+                    ImageToRgba(img),
+                    img.Width,
+                    img.Height,
+                    tplFormat,
+                    paletteFormat
+                );
                 numArray1 = colorIndexConverter.Data;
                 numArray2 = colorIndexConverter.Palette;
                 tplPaletteHeader.NumberOfItems = (ushort)(numArray2.Length / 2);
@@ -467,7 +547,10 @@ namespace libWiiSharp
 
         public Size GetTextureSize(int index)
         {
-            return new Size(tplTextureHeaders[index].TextureWidth, tplTextureHeaders[index].TextureHeight);
+            return new Size(
+                tplTextureHeaders[index].TextureWidth,
+                tplTextureHeaders[index].TextureHeight
+            );
         }
 
         private void WriteToStream(Stream writeStream)
@@ -481,7 +564,11 @@ namespace libWiiSharp
             int num = 0;
             for (int index = 0; index < tplHeader.NumOfTextures; ++index)
             {
-                if (tplTextureHeaders[index].TextureFormat == 8U || tplTextureHeaders[index].TextureFormat == 9U || tplTextureHeaders[index].TextureFormat == 10U)
+                if (
+                    tplTextureHeaders[index].TextureFormat == 8U
+                    || tplTextureHeaders[index].TextureFormat == 9U
+                    || tplTextureHeaders[index].TextureFormat == 10U
+                )
                 {
                     ++num;
                 }
@@ -490,9 +577,17 @@ namespace libWiiSharp
             writeStream.Seek(num * 12, SeekOrigin.Current);
             for (int index = 0; index < tplHeader.NumOfTextures; ++index)
             {
-                if (tplTextureHeaders[index].TextureFormat == 8U || tplTextureHeaders[index].TextureFormat == 9U || tplTextureHeaders[index].TextureFormat == 10U)
+                if (
+                    tplTextureHeaders[index].TextureFormat == 8U
+                    || tplTextureHeaders[index].TextureFormat == 9U
+                    || tplTextureHeaders[index].TextureFormat == 10U
+                )
                 {
-                    FireDebug("   Writing Palette of Texture #{1}... (Offset: 0x{0})", writeStream.Position, index + 1);
+                    FireDebug(
+                        "   Writing Palette of Texture #{1}... (Offset: 0x{0})",
+                        writeStream.Position,
+                        index + 1
+                    );
                     writeStream.Seek(Shared.AddPadding(writeStream.Position, 32), SeekOrigin.Begin);
                     tplPaletteHeaders[index].PaletteDataOffset = (uint)writeStream.Position;
                     writeStream.Write(paletteData[index], 0, paletteData[index].Length);
@@ -502,8 +597,16 @@ namespace libWiiSharp
             writeStream.Seek(tplHeader.NumOfTextures * 36U, SeekOrigin.Current);
             for (int index = 0; index < tplHeader.NumOfTextures; ++index)
             {
-                FireDebug("   Writing Texture #{1} of {2}... (Offset: 0x{0})", writeStream.Position, index + 1, tplHeader.NumOfTextures);
-                writeStream.Seek(Shared.AddPadding((int)writeStream.Position, 32), SeekOrigin.Begin);
+                FireDebug(
+                    "   Writing Texture #{1} of {2}... (Offset: 0x{0})",
+                    writeStream.Position,
+                    index + 1,
+                    tplHeader.NumOfTextures
+                );
+                writeStream.Seek(
+                    Shared.AddPadding((int)writeStream.Position, 32),
+                    SeekOrigin.Begin
+                );
                 tplTextureHeaders[index].TextureDataOffset = (uint)writeStream.Position;
                 writeStream.Write(textureData[index], 0, textureData[index].Length);
             }
@@ -515,9 +618,17 @@ namespace libWiiSharp
             writeStream.Seek(position2, SeekOrigin.Begin);
             for (int index = 0; index < tplHeader.NumOfTextures; ++index)
             {
-                if (tplTextureHeaders[index].TextureFormat == 8U || tplTextureHeaders[index].TextureFormat == 9U || tplTextureHeaders[index].TextureFormat == 10U)
+                if (
+                    tplTextureHeaders[index].TextureFormat == 8U
+                    || tplTextureHeaders[index].TextureFormat == 9U
+                    || tplTextureHeaders[index].TextureFormat == 10U
+                )
                 {
-                    FireDebug("   Writing Palette Header of Texture #{1}... (Offset: 0x{0})", writeStream.Position, index + 1);
+                    FireDebug(
+                        "   Writing Palette Header of Texture #{1}... (Offset: 0x{0})",
+                        writeStream.Position,
+                        index + 1
+                    );
                     tplTextureEntries[index].PaletteHeaderOffset = (uint)writeStream.Position;
                     tplPaletteHeaders[index].Write(writeStream);
                 }
@@ -525,14 +636,24 @@ namespace libWiiSharp
             writeStream.Seek(position3, SeekOrigin.Begin);
             for (int index = 0; index < tplHeader.NumOfTextures; ++index)
             {
-                FireDebug("   Writing Texture Header #{1} of {2}... (Offset: 0x{0})", writeStream.Position, index + 1, tplHeader.NumOfTextures);
+                FireDebug(
+                    "   Writing Texture Header #{1} of {2}... (Offset: 0x{0})",
+                    writeStream.Position,
+                    index + 1,
+                    tplHeader.NumOfTextures
+                );
                 tplTextureEntries[index].TextureHeaderOffset = (uint)writeStream.Position;
                 tplTextureHeaders[index].Write(writeStream);
             }
             writeStream.Seek(position1, SeekOrigin.Begin);
             for (int index = 0; index < tplHeader.NumOfTextures; ++index)
             {
-                FireDebug("   Writing Texture Entry #{1} of {2}... (Offset: 0x{0})", writeStream.Position, index + 1, tplHeader.NumOfTextures);
+                FireDebug(
+                    "   Writing Texture Entry #{1} of {2}... (Offset: 0x{0})",
+                    writeStream.Position,
+                    index + 1,
+                    tplHeader.NumOfTextures
+                );
                 tplTextureEntries[index].Write(writeStream);
             }
             FireDebug("Writing TPL Finished...");
@@ -553,32 +674,58 @@ namespace libWiiSharp
             tplFile.Read(buffer1, 0, 4);
             if ((int)Shared.Swap(BitConverter.ToUInt32(buffer1, 0)) != (int)tplHeader.TplMagic)
             {
-                FireDebug("    -> Invalid Magic: 0x{0}", (object)Shared.Swap(BitConverter.ToUInt32(buffer1, 0)));
+                FireDebug(
+                    "    -> Invalid Magic: 0x{0}",
+                    (object)Shared.Swap(BitConverter.ToUInt32(buffer1, 0))
+                );
                 throw new Exception("TPL Header: Invalid Magic!");
             }
-            FireDebug("   Reading TPL Header: NumOfTextures... (Offset: 0x{0})", (object)tplFile.Position);
+            FireDebug(
+                "   Reading TPL Header: NumOfTextures... (Offset: 0x{0})",
+                (object)tplFile.Position
+            );
             tplFile.Read(buffer1, 0, 4);
             tplHeader.NumOfTextures = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
-            FireDebug("   Reading TPL Header: Headersize... (Offset: 0x{0})", (object)tplFile.Position);
+            FireDebug(
+                "   Reading TPL Header: Headersize... (Offset: 0x{0})",
+                (object)tplFile.Position
+            );
             tplFile.Read(buffer1, 0, 4);
             if ((int)Shared.Swap(BitConverter.ToUInt32(buffer1, 0)) != (int)tplHeader.HeaderSize)
             {
-                FireDebug("    -> Invalid Headersize: 0x{0}", (object)Shared.Swap(BitConverter.ToUInt32(buffer1, 0)));
+                FireDebug(
+                    "    -> Invalid Headersize: 0x{0}",
+                    (object)Shared.Swap(BitConverter.ToUInt32(buffer1, 0))
+                );
                 throw new Exception("TPL Header: Invalid Headersize!");
             }
             for (int index = 0; index < tplHeader.NumOfTextures; ++index)
             {
-                FireDebug("   Reading Texture Entry #{1} of {2}... (Offset: 0x{0})", tplFile.Position, index + 1, tplHeader.NumOfTextures);
+                FireDebug(
+                    "   Reading Texture Entry #{1} of {2}... (Offset: 0x{0})",
+                    tplFile.Position,
+                    index + 1,
+                    tplHeader.NumOfTextures
+                );
                 TPL_TextureEntry tplTextureEntry = new TPL_TextureEntry();
                 tplFile.Read(buffer1, 0, 4);
-                tplTextureEntry.TextureHeaderOffset = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
+                tplTextureEntry.TextureHeaderOffset = Shared.Swap(
+                    BitConverter.ToUInt32(buffer1, 0)
+                );
                 tplFile.Read(buffer1, 0, 4);
-                tplTextureEntry.PaletteHeaderOffset = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
+                tplTextureEntry.PaletteHeaderOffset = Shared.Swap(
+                    BitConverter.ToUInt32(buffer1, 0)
+                );
                 tplTextureEntries.Add(tplTextureEntry);
             }
             for (int index = 0; index < tplHeader.NumOfTextures; ++index)
             {
-                FireDebug("   Reading Texture Header #{1} of {2}... (Offset: 0x{0})", tplFile.Position, index + 1, tplHeader.NumOfTextures);
+                FireDebug(
+                    "   Reading Texture Header #{1} of {2}... (Offset: 0x{0})",
+                    tplFile.Position,
+                    index + 1,
+                    tplHeader.NumOfTextures
+                );
                 TPL_TextureHeader tplTextureHeader = new TPL_TextureHeader();
                 TPL_PaletteHeader tplPaletteHeader = new TPL_PaletteHeader();
                 tplFile.Seek(tplTextureEntries[index].TextureHeaderOffset, SeekOrigin.Begin);
@@ -606,7 +753,12 @@ namespace libWiiSharp
                 tplTextureHeader.Unpacked = buffer1[3];
                 if (tplTextureEntries[index].PaletteHeaderOffset != 0U)
                 {
-                    FireDebug("   Reading Palette Header #{1} of {2}... (Offset: 0x{0})", tplFile.Position, index + 1, tplHeader.NumOfTextures);
+                    FireDebug(
+                        "   Reading Palette Header #{1} of {2}... (Offset: 0x{0})",
+                        tplFile.Position,
+                        index + 1,
+                        tplHeader.NumOfTextures
+                    );
                     tplFile.Seek(tplTextureEntries[index].PaletteHeaderOffset, SeekOrigin.Begin);
                     tplFile.Read(buffer1, 0, 4);
                     tplPaletteHeader.NumberOfItems = Shared.Swap(BitConverter.ToUInt16(buffer1, 0));
@@ -615,16 +767,34 @@ namespace libWiiSharp
                     tplFile.Read(buffer1, 0, 4);
                     tplPaletteHeader.PaletteFormat = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
                     tplFile.Read(buffer1, 0, 4);
-                    tplPaletteHeader.PaletteDataOffset = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
+                    tplPaletteHeader.PaletteDataOffset = Shared.Swap(
+                        BitConverter.ToUInt32(buffer1, 0)
+                    );
                 }
                 tplFile.Seek(tplTextureHeader.TextureDataOffset, SeekOrigin.Begin);
-                byte[] buffer2 = new byte[TextureByteSize((TPL_TextureFormat)tplTextureHeader.TextureFormat, tplTextureHeader.TextureWidth, tplTextureHeader.TextureHeight)];
+                byte[] buffer2 = new byte[
+                    TextureByteSize(
+                        (TPL_TextureFormat)tplTextureHeader.TextureFormat,
+                        tplTextureHeader.TextureWidth,
+                        tplTextureHeader.TextureHeight
+                    )
+                ];
                 byte[] buffer3 = new byte[tplPaletteHeader.NumberOfItems * 2];
-                FireDebug("   Reading Texture #{1} of {2}... (Offset: 0x{0})", tplFile.Position, index + 1, tplHeader.NumOfTextures);
+                FireDebug(
+                    "   Reading Texture #{1} of {2}... (Offset: 0x{0})",
+                    tplFile.Position,
+                    index + 1,
+                    tplHeader.NumOfTextures
+                );
                 tplFile.Read(buffer2, 0, buffer2.Length);
                 if (tplTextureEntries[index].PaletteHeaderOffset != 0U)
                 {
-                    FireDebug("   Reading Palette #{1} of {2}... (Offset: 0x{0})", tplFile.Position, index + 1, tplHeader.NumOfTextures);
+                    FireDebug(
+                        "   Reading Palette #{1} of {2}... (Offset: 0x{0})",
+                        tplFile.Position,
+                        index + 1,
+                        tplHeader.NumOfTextures
+                    );
                     tplFile.Seek(tplPaletteHeader.PaletteDataOffset, SeekOrigin.Begin);
                     tplFile.Read(buffer3, 0, buffer3.Length);
                 }
@@ -644,22 +814,33 @@ namespace libWiiSharp
         {
             return tplFormat switch
             {
-                TPL_TextureFormat.I4 => Shared.AddPadding(width, 8) * Shared.AddPadding(height, 8) / 2,
-                TPL_TextureFormat.I8 or TPL_TextureFormat.IA4 => Shared.AddPadding(width, 8) * Shared.AddPadding(height, 4),
-                TPL_TextureFormat.IA8 or TPL_TextureFormat.RGB565 or TPL_TextureFormat.RGB5A3 => Shared.AddPadding(width, 4) * Shared.AddPadding(height, 4) * 2,
-                TPL_TextureFormat.RGBA8 => Shared.AddPadding(width, 4) * Shared.AddPadding(height, 4) * 4,
-                TPL_TextureFormat.CI4 => Shared.AddPadding(width, 8) * Shared.AddPadding(height, 8) / 2,
+                TPL_TextureFormat.I4 => Shared.AddPadding(width, 8)
+                    * Shared.AddPadding(height, 8)
+                    / 2,
+                TPL_TextureFormat.I8 or TPL_TextureFormat.IA4 => Shared.AddPadding(width, 8)
+                    * Shared.AddPadding(height, 4),
+                TPL_TextureFormat.IA8 or TPL_TextureFormat.RGB565 or TPL_TextureFormat.RGB5A3 =>
+                    Shared.AddPadding(width, 4) * Shared.AddPadding(height, 4) * 2,
+                TPL_TextureFormat.RGBA8 => Shared.AddPadding(width, 4)
+                    * Shared.AddPadding(height, 4)
+                    * 4,
+                TPL_TextureFormat.CI4 => Shared.AddPadding(width, 8)
+                    * Shared.AddPadding(height, 8)
+                    / 2,
                 TPL_TextureFormat.CI8 => Shared.AddPadding(width, 8) * Shared.AddPadding(height, 4),
-                TPL_TextureFormat.CI14X2 => Shared.AddPadding(width, 4) * Shared.AddPadding(height, 4) * 2,
+                TPL_TextureFormat.CI14X2 => Shared.AddPadding(width, 4)
+                    * Shared.AddPadding(height, 4)
+                    * 2,
                 TPL_TextureFormat.CMP => width * height,
                 _ => throw new FormatException("Unsupported Texture Format!"),
             };
         }
 
         private void PrivCreateFromImages(
-          Image[] images,
-          TPL_TextureFormat[] tplFormats,
-          TPL_PaletteFormat[] paletteFormats)
+            Image[] images,
+            TPL_TextureFormat[] tplFormats,
+            TPL_PaletteFormat[] paletteFormats
+        )
         {
             tplHeader = new TPL_Header();
             tplTextureEntries = new List<TPL_TextureEntry>();
@@ -679,9 +860,19 @@ namespace libWiiSharp
                 tplTextureHeader.TextureHeight = (ushort)image.Height;
                 tplTextureHeader.TextureWidth = (ushort)image.Width;
                 tplTextureHeader.TextureFormat = (uint)tplFormats[index];
-                if (tplFormats[index] == TPL_TextureFormat.CI4 || tplFormats[index] == TPL_TextureFormat.CI8 || tplFormats[index] == TPL_TextureFormat.CI14X2)
+                if (
+                    tplFormats[index] == TPL_TextureFormat.CI4
+                    || tplFormats[index] == TPL_TextureFormat.CI8
+                    || tplFormats[index] == TPL_TextureFormat.CI14X2
+                )
                 {
-                    ColorIndexConverter colorIndexConverter = new ColorIndexConverter(ImageToRgba(image), image.Width, image.Height, tplFormats[index], paletteFormats[index]);
+                    ColorIndexConverter colorIndexConverter = new ColorIndexConverter(
+                        ImageToRgba(image),
+                        image.Width,
+                        image.Height,
+                        tplFormats[index],
+                        paletteFormats[index]
+                    );
                     numArray1 = colorIndexConverter.Data;
                     numArray2 = colorIndexConverter.Palette;
                     tplPaletteHeader.NumberOfItems = (ushort)(numArray2.Length / 2);
@@ -706,15 +897,22 @@ namespace libWiiSharp
                 TPL_TextureFormat.RGB565 => ToRGB565((Bitmap)img),
                 TPL_TextureFormat.RGB5A3 => ToRGB5A3((Bitmap)img),
                 TPL_TextureFormat.RGBA8 => ToRGBA8((Bitmap)img),
-                TPL_TextureFormat.CI4 or TPL_TextureFormat.CI8 or TPL_TextureFormat.CI14X2 => new byte[0],
-                _ => throw new FormatException("Format not supported!\nCurrently, images can only be converted to the following formats:\nI4, I8, IA4, IA8, RGB565, RGB5A3, RGBA8, CI4, CI8 , CI14X2."),
+                TPL_TextureFormat.CI4 or TPL_TextureFormat.CI8 or TPL_TextureFormat.CI14X2 =>
+                    new byte[0],
+                _ => throw new FormatException(
+                    "Format not supported!\nCurrently, images can only be converted to the following formats:\nI4, I8, IA4, IA8, RGB565, RGB5A3, RGBA8, CI4, CI8 , CI14X2."
+                ),
             };
         }
 
         private uint[] ImageToRgba(Image img)
         {
             Bitmap bitmap = (Bitmap)img;
-            BitmapData bitmapdata = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            BitmapData bitmapdata = bitmap.LockBits(
+                new Rectangle(0, 0, bitmap.Width, bitmap.Height),
+                ImageLockMode.ReadOnly,
+                PixelFormat.Format32bppArgb
+            );
             byte[] numArray = new byte[bitmapdata.Height * Math.Abs(bitmapdata.Stride)];
             Marshal.Copy(bitmapdata.Scan0, numArray, 0, numArray.Length);
             bitmap.UnlockBits(bitmapdata);
@@ -736,7 +934,11 @@ namespace libWiiSharp
             Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
             try
             {
-                BitmapData bitmapdata = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.WriteOnly, bitmap.PixelFormat);
+                BitmapData bitmapdata = bitmap.LockBits(
+                    new Rectangle(0, 0, bitmap.Width, bitmap.Height),
+                    ImageLockMode.WriteOnly,
+                    bitmap.PixelFormat
+                );
                 Marshal.Copy(data, 0, bitmapdata.Scan0, data.Length);
                 bitmap.UnlockBits(bitmapdata);
                 return bitmap;
@@ -750,18 +952,22 @@ namespace libWiiSharp
 
         private uint[] PaletteToRgba(int index)
         {
-            TPL_PaletteFormat paletteFormat = (TPL_PaletteFormat)tplPaletteHeaders[index].PaletteFormat;
+            TPL_PaletteFormat paletteFormat = (TPL_PaletteFormat)
+                tplPaletteHeaders[index].PaletteFormat;
             int numberOfItems = tplPaletteHeaders[index].NumberOfItems;
             uint[] numArray = new uint[numberOfItems];
             for (int index1 = 0; index1 < numberOfItems; ++index1)
             {
                 if (index1 < numberOfItems)
                 {
-                    ushort uint16 = BitConverter.ToUInt16(new byte[2]
-                    {
-            paletteData[index][index1 * 2 + 1],
-            paletteData[index][index1 * 2]
-                    }, 0);
+                    ushort uint16 = BitConverter.ToUInt16(
+                        new byte[2]
+                        {
+                            paletteData[index][index1 * 2 + 1],
+                            paletteData[index][index1 * 2],
+                        },
+                        0
+                    );
                     int num1;
                     int num2;
                     int num3;
@@ -837,7 +1043,9 @@ namespace libWiiSharp
                                     {
                                         int num3 = num2 >> 8 & byte.MaxValue;
                                         int num4 = num2 & byte.MaxValue;
-                                        array[index5 + index4 * width] |= (uint)(num4 << 16 | num3 << 24);
+                                        array[index5 + index4 * width] |= (uint)(
+                                            num4 << 16 | num3 << 24
+                                        );
                                     }
                                     else
                                     {
@@ -861,7 +1069,9 @@ namespace libWiiSharp
             int height = img.Height;
             int index1 = 0;
             int num1 = 0;
-            byte[] numArray1 = new byte[Shared.AddPadding(width, 4) * Shared.AddPadding(height, 4) * 4];
+            byte[] numArray1 = new byte[
+                Shared.AddPadding(width, 4) * Shared.AddPadding(height, 4) * 4
+            ];
             uint[] numArray2 = new uint[32];
             uint[] numArray3 = new uint[32];
             uint[] numArray4 = new uint[32];
@@ -874,7 +1084,10 @@ namespace libWiiSharp
                     {
                         for (int index5 = index3; index5 < index3 + 4; ++index5)
                         {
-                            uint num2 = index4 >= height || index5 >= width ? 0U : rgba[index5 + index4 * width];
+                            uint num2 =
+                                index4 >= height || index5 >= width
+                                    ? 0U
+                                    : rgba[index5 + index4 * width];
                             numArray2[index1] = num2 >> 16 & byte.MaxValue;
                             numArray3[index1] = num2 >> 8 & byte.MaxValue;
                             numArray4[index1] = num2 & byte.MaxValue;
@@ -950,7 +1163,9 @@ namespace libWiiSharp
                                     num4 = (num2 >> 4 & 15) * byte.MaxValue / 15;
                                     num5 = (num2 & 15) * byte.MaxValue / 15;
                                 }
-                                array[index3 * width + index4] = (uint)(num5 | num4 << 8 | num3 << 16 | num6 << 24);
+                                array[index3 * width + index4] = (uint)(
+                                    num5 | num4 << 8 | num3 << 16 | num6 << 24
+                                );
                             }
                         }
                     }
@@ -965,7 +1180,9 @@ namespace libWiiSharp
             int width = img.Width;
             int height = img.Height;
             int num1 = -1;
-            byte[] numArray = new byte[Shared.AddPadding(width, 4) * Shared.AddPadding(height, 4) * 2];
+            byte[] numArray = new byte[
+                Shared.AddPadding(width, 4) * Shared.AddPadding(height, 4) * 2
+            ];
             for (int index1 = 0; index1 < height; index1 += 4)
             {
                 for (int index2 = 0; index2 < width; index2 += 4)
@@ -998,7 +1215,14 @@ namespace libWiiSharp
                                 }
                                 else
                                 {
-                                    num2 = num4 | 32768 | ((num5 * 31 / byte.MaxValue & 31) << 10 | (num6 * 31 / byte.MaxValue & 31) << 5 | num7 * 31 / byte.MaxValue & 31);
+                                    num2 =
+                                        num4
+                                        | 32768
+                                        | (
+                                            (num5 * 31 / byte.MaxValue & 31) << 10
+                                            | (num6 * 31 / byte.MaxValue & 31) << 5
+                                            | num7 * 31 / byte.MaxValue & 31
+                                        );
                                 }
                             }
                             int num14;
@@ -1029,7 +1253,9 @@ namespace libWiiSharp
                                 int num3 = (num2 >> 11 & 31) << 3 & byte.MaxValue;
                                 int num4 = (num2 >> 5 & 63) << 2 & byte.MaxValue;
                                 int num5 = (num2 & 31) << 3 & byte.MaxValue;
-                                array[index3 * width + index4] = (uint)(num5 | num4 << 8 | num3 << 16 | -16777216);
+                                array[index3 * width + index4] = (uint)(
+                                    num5 | num4 << 8 | num3 << 16 | -16777216
+                                );
                             }
                         }
                     }
@@ -1044,7 +1270,9 @@ namespace libWiiSharp
             int width = img.Width;
             int height = img.Height;
             int num1 = -1;
-            byte[] numArray = new byte[Shared.AddPadding(width, 4) * Shared.AddPadding(height, 4) * 2];
+            byte[] numArray = new byte[
+                Shared.AddPadding(width, 4) * Shared.AddPadding(height, 4) * 2
+            ];
             for (int index1 = 0; index1 < height; index1 += 4)
             {
                 for (int index2 = 0; index2 < width; index2 += 4)
@@ -1061,7 +1289,13 @@ namespace libWiiSharp
                             else
                             {
                                 int num3 = (int)rgba[index4 + index3 * width];
-                                num2 = (ushort)((uint)((int)(((uint)num3 >> 16 & byte.MaxValue) >> 3) << 11 | (int)(((uint)num3 >> 8 & byte.MaxValue) >> 2) << 5) | (uint)(num3 & byte.MaxValue) >> 3);
+                                num2 = (ushort)(
+                                    (uint)(
+                                        (int)(((uint)num3 >> 16 & byte.MaxValue) >> 3) << 11
+                                        | (int)(((uint)num3 >> 8 & byte.MaxValue) >> 2) << 5
+                                    )
+                                    | (uint)(num3 & byte.MaxValue) >> 3
+                                );
                             }
                             int num4;
                             numArray[num4 = num1 + 1] = (byte)((uint)num2 >> 8);
@@ -1089,11 +1323,15 @@ namespace libWiiSharp
                             if (index3 < height && index4 < width)
                             {
                                 int num3 = (num2 >> 4) * byte.MaxValue / 15;
-                                array[index3 * width + index4] = (uint)(num3 | num3 << 8 | num3 << 16 | -16777216);
+                                array[index3 * width + index4] = (uint)(
+                                    num3 | num3 << 8 | num3 << 16 | -16777216
+                                );
                                 int num4 = (num2 & 15) * byte.MaxValue / 15;
                                 if (index3 * width + index4 + 1 < array.Length)
                                 {
-                                    array[index3 * width + index4 + 1] = (uint)(num4 | num4 << 8 | num4 << 16 | -16777216);
+                                    array[index3 * width + index4 + 1] = (uint)(
+                                        num4 | num4 << 8 | num4 << 16 | -16777216
+                                    );
                                 }
                             }
                         }
@@ -1109,7 +1347,9 @@ namespace libWiiSharp
             int width = img.Width;
             int height = img.Height;
             int num1 = 0;
-            byte[] numArray = new byte[Shared.AddPadding(width, 8) * Shared.AddPadding(height, 8) / 2];
+            byte[] numArray = new byte[
+                Shared.AddPadding(width, 8) * Shared.AddPadding(height, 8) / 2
+            ];
             for (int index1 = 0; index1 < height; index1 += 8)
             {
                 for (int index2 = 0; index2 < width; index2 += 8)
@@ -1126,10 +1366,29 @@ namespace libWiiSharp
                             else
                             {
                                 int num3 = (int)rgba[index4 + index3 * width];
-                                int num4 = (int)(((uint)(num3 & byte.MaxValue) + ((uint)num3 >> 8 & byte.MaxValue) + ((uint)num3 >> 16 & byte.MaxValue)) / 3U) & byte.MaxValue;
-                                int num5 = index4 + index3 * width + 1 < rgba.Length ? (int)rgba[index4 + index3 * width + 1] : 0;
-                                uint num6 = ((uint)(num5 & byte.MaxValue) + ((uint)num5 >> 8 & byte.MaxValue) + ((uint)num5 >> 16 & byte.MaxValue)) / 3U & byte.MaxValue;
-                                num2 = (byte)((int)((uint)(num4 * 15) / byte.MaxValue) << 4 | (int)(num6 * 15U / byte.MaxValue) & 15);
+                                int num4 =
+                                    (int)(
+                                        (
+                                            (uint)(num3 & byte.MaxValue)
+                                            + ((uint)num3 >> 8 & byte.MaxValue)
+                                            + ((uint)num3 >> 16 & byte.MaxValue)
+                                        ) / 3U
+                                    ) & byte.MaxValue;
+                                int num5 =
+                                    index4 + index3 * width + 1 < rgba.Length
+                                        ? (int)rgba[index4 + index3 * width + 1]
+                                        : 0;
+                                uint num6 =
+                                    (
+                                        (uint)(num5 & byte.MaxValue)
+                                        + ((uint)num5 >> 8 & byte.MaxValue)
+                                        + ((uint)num5 >> 16 & byte.MaxValue)
+                                    ) / 3U
+                                    & byte.MaxValue;
+                                num2 = (byte)(
+                                    (int)((uint)(num4 * 15) / byte.MaxValue) << 4
+                                    | (int)(num6 * 15U / byte.MaxValue) & 15
+                                );
                             }
                             numArray[num1++] = num2;
                         }
@@ -1154,7 +1413,9 @@ namespace libWiiSharp
                             int num2 = tpl[num1++];
                             if (index3 < height && index4 < width)
                             {
-                                array[index3 * width + index4] = (uint)(num2 | num2 << 8 | num2 << 16 | -16777216);
+                                array[index3 * width + index4] = (uint)(
+                                    num2 | num2 << 8 | num2 << 16 | -16777216
+                                );
                             }
                         }
                     }
@@ -1186,7 +1447,14 @@ namespace libWiiSharp
                             else
                             {
                                 int num3 = (int)rgba[index4 + index3 * width];
-                                num2 = (byte)(((uint)(num3 & byte.MaxValue) + ((uint)num3 >> 8 & byte.MaxValue) + ((uint)num3 >> 16 & byte.MaxValue)) / 3U & byte.MaxValue);
+                                num2 = (byte)(
+                                    (
+                                        (uint)(num3 & byte.MaxValue)
+                                        + ((uint)num3 >> 8 & byte.MaxValue)
+                                        + ((uint)num3 >> 16 & byte.MaxValue)
+                                    ) / 3U
+                                    & byte.MaxValue
+                                );
                             }
                             numArray[num1++] = num2;
                         }
@@ -1213,7 +1481,9 @@ namespace libWiiSharp
                             {
                                 int num3 = (num2 & 15) * byte.MaxValue / 15 & byte.MaxValue;
                                 int num4 = (num2 >> 4) * byte.MaxValue / 15 & byte.MaxValue;
-                                array[index3 * width + index4] = (uint)(num3 | num3 << 8 | num3 << 16 | num4 << 24);
+                                array[index3 * width + index4] = (uint)(
+                                    num3 | num3 << 8 | num3 << 16 | num4 << 24
+                                );
                             }
                         }
                     }
@@ -1245,7 +1515,22 @@ namespace libWiiSharp
                             else
                             {
                                 uint num3 = rgba[index4 + index3 * width];
-                                num2 = (byte)((int)((uint)(((int)(((num3 & byte.MaxValue) + (num3 >> 8 & byte.MaxValue) + (num3 >> 16 & byte.MaxValue)) / 3U) & byte.MaxValue) * 15) / byte.MaxValue) & 15 | (int)((num3 >> 24 & byte.MaxValue) * 15U / byte.MaxValue) << 4);
+                                num2 = (byte)(
+                                    (int)(
+                                        (uint)(
+                                            (
+                                                (int)(
+                                                    (
+                                                        (num3 & byte.MaxValue)
+                                                        + (num3 >> 8 & byte.MaxValue)
+                                                        + (num3 >> 16 & byte.MaxValue)
+                                                    ) / 3U
+                                                ) & byte.MaxValue
+                                            ) * 15
+                                        ) / byte.MaxValue
+                                    ) & 15
+                                    | (int)((num3 >> 24 & byte.MaxValue) * 15U / byte.MaxValue) << 4
+                                );
                             }
                             numArray[num1++] = num2;
                         }
@@ -1272,7 +1557,9 @@ namespace libWiiSharp
                             {
                                 uint num3 = (uint)(num2 >> 8);
                                 uint num4 = (uint)(num2 & byte.MaxValue);
-                                array[index3 * width + index4] = (uint)((int)num4 | (int)num4 << 8 | (int)num4 << 16 | (int)num3 << 24);
+                                array[index3 * width + index4] = (uint)(
+                                    (int)num4 | (int)num4 << 8 | (int)num4 << 16 | (int)num3 << 24
+                                );
                             }
                         }
                     }
@@ -1287,7 +1574,9 @@ namespace libWiiSharp
             int width = img.Width;
             int height = img.Height;
             int num1 = 0;
-            byte[] numArray1 = new byte[Shared.AddPadding(width, 4) * Shared.AddPadding(height, 4) * 2];
+            byte[] numArray1 = new byte[
+                Shared.AddPadding(width, 4) * Shared.AddPadding(height, 4) * 2
+            ];
             for (int index1 = 0; index1 < height; index1 += 4)
             {
                 for (int index2 = 0; index2 < width; index2 += 4)
@@ -1304,7 +1593,15 @@ namespace libWiiSharp
                             else
                             {
                                 int num3 = (int)rgba[index4 + index3 * width];
-                                num2 = (ushort)((uint)(((int)((uint)num3 >> 24) & byte.MaxValue) << 8) | ((uint)(num3 & byte.MaxValue) + ((uint)num3 >> 8 & byte.MaxValue) + ((uint)num3 >> 16 & byte.MaxValue)) / 3U & byte.MaxValue);
+                                num2 = (ushort)(
+                                    (uint)(((int)((uint)num3 >> 24) & byte.MaxValue) << 8)
+                                    | (
+                                        (uint)(num3 & byte.MaxValue)
+                                        + ((uint)num3 >> 8 & byte.MaxValue)
+                                        + ((uint)num3 >> 16 & byte.MaxValue)
+                                    ) / 3U
+                                        & byte.MaxValue
+                                );
                             }
                             Array.Reverse(BitConverter.GetBytes(num2));
                             byte[] numArray2 = numArray1;
@@ -1442,7 +1739,9 @@ namespace libWiiSharp
                         numArray2[3] = 0;
                     }
 
-                    array[index1] = (uint)(numArray2[0] << 16 | numArray2[1] << 8 | numArray2[2] | numArray2[3] << 24);
+                    array[index1] = (uint)(
+                        numArray2[0] << 16 | numArray2[1] << 8 | numArray2[2] | numArray2[3] << 24
+                    );
                     ++index1;
                 }
             }
@@ -1668,6 +1967,7 @@ namespace libWiiSharp
             writeStream.Write(BitConverter.GetBytes(Shared.Swap(paletteDataOffset)), 0, 4);
         }
     }
+
     internal class ColorIndexConverter
     {
         private uint[] rgbaPalette;
@@ -1688,14 +1988,19 @@ namespace libWiiSharp
             int width,
             int height,
             TPL_TextureFormat tplFormat,
-            TPL_PaletteFormat paletteFormat)
+            TPL_PaletteFormat paletteFormat
+        )
         {
             if (tplFormat != TPL_TextureFormat.CI4 && tplFormat != TPL_TextureFormat.CI8)
             {
                 throw new Exception("Texture format must be either CI4 or CI8");
             }
 
-            if (paletteFormat != TPL_PaletteFormat.IA8 && paletteFormat != TPL_PaletteFormat.RGB565 && paletteFormat != TPL_PaletteFormat.RGB5A3)
+            if (
+                paletteFormat != TPL_PaletteFormat.IA8
+                && paletteFormat != TPL_PaletteFormat.RGB565
+                && paletteFormat != TPL_PaletteFormat.RGB5A3
+            )
             {
                 throw new Exception("Palette format must be either IA8, RGB565 or RGB5A3!");
             }
@@ -1725,7 +2030,9 @@ namespace libWiiSharp
 
         private void ToCI4()
         {
-            byte[] numArray = new byte[Shared.AddPadding(width, 8) * Shared.AddPadding(height, 8) / 2];
+            byte[] numArray = new byte[
+                Shared.AddPadding(width, 8) * Shared.AddPadding(height, 8) / 2
+            ];
             int num = 0;
             for (int index1 = 0; index1 < height; index1 += 8)
             {
@@ -1735,9 +2042,23 @@ namespace libWiiSharp
                     {
                         for (int index4 = index2; index4 < index2 + 8; index4 += 2)
                         {
-                            uint colorIndex1 = GetColorIndex(index3 >= height || index4 >= width ? 0U : rgbaData[index3 * width + index4]);
-                            uint colorIndex2 = GetColorIndex(index3 >= height || index4 >= width ? 0U : (index3 * width + index4 + 1 < rgbaData.Length ? rgbaData[index3 * width + index4 + 1] : 0U));
-                            numArray[num++] = (byte)((uint)(byte)colorIndex1 << 4 | (byte)colorIndex2);
+                            uint colorIndex1 = GetColorIndex(
+                                index3 >= height || index4 >= width
+                                    ? 0U
+                                    : rgbaData[index3 * width + index4]
+                            );
+                            uint colorIndex2 = GetColorIndex(
+                                index3 >= height || index4 >= width
+                                    ? 0U
+                                    : (
+                                        index3 * width + index4 + 1 < rgbaData.Length
+                                            ? rgbaData[index3 * width + index4 + 1]
+                                            : 0U
+                                    )
+                            );
+                            numArray[num++] = (byte)(
+                                (uint)(byte)colorIndex1 << 4 | (byte)colorIndex2
+                            );
                         }
                     }
                 }
@@ -1757,7 +2078,10 @@ namespace libWiiSharp
                     {
                         for (int index4 = index2; index4 < index2 + 8; ++index4)
                         {
-                            uint num2 = index3 >= height || index4 >= width ? 0U : rgbaData[index3 * width + index4];
+                            uint num2 =
+                                index3 >= height || index4 >= width
+                                    ? 0U
+                                    : rgbaData[index3 * width + index4];
                             numArray[num1++] = (byte)GetColorIndex(num2);
                         }
                     }
@@ -1768,7 +2092,9 @@ namespace libWiiSharp
 
         private void ToCI14X2()
         {
-            byte[] numArray1 = new byte[Shared.AddPadding(width, 4) * Shared.AddPadding(height, 4) * 2];
+            byte[] numArray1 = new byte[
+                Shared.AddPadding(width, 4) * Shared.AddPadding(height, 4) * 2
+            ];
             int num1 = 0;
             for (int index1 = 0; index1 < height; index1 += 4)
             {
@@ -1778,7 +2104,13 @@ namespace libWiiSharp
                     {
                         for (int index4 = index2; index4 < index2 + 4; ++index4)
                         {
-                            byte[] bytes = BitConverter.GetBytes((ushort)GetColorIndex(index3 >= height || index4 >= width ? 0U : rgbaData[index3 * width + index4]));
+                            byte[] bytes = BitConverter.GetBytes(
+                                (ushort)GetColorIndex(
+                                    index3 >= height || index4 >= width
+                                        ? 0U
+                                        : rgbaData[index3 * width + index4]
+                                )
+                            );
                             byte[] numArray2 = numArray1;
                             int index5 = num1;
                             int num2 = index5 + 1;
@@ -1814,7 +2146,10 @@ namespace libWiiSharp
             ushortList.Add(0);
             for (int index = 1; index < rgbaData.Length && uintList.Count != num1; ++index)
             {
-                if ((rgbaData[index] >> 24 & byte.MaxValue) >= (tplFormat == TPL_TextureFormat.CI14X2 ? 1L : 25L))
+                if (
+                    (rgbaData[index] >> 24 & byte.MaxValue)
+                    >= (tplFormat == TPL_TextureFormat.CI14X2 ? 1L : 25L)
+                )
                 {
                     ushort num2 = Shared.Swap(ConvertToPaletteValue((int)rgbaData[index]));
                     if (!uintList.Contains(rgbaData[index]) && !ushortList.Contains(num2))
@@ -1839,12 +2174,22 @@ namespace libWiiSharp
             int num2;
             if (paletteFormat == TPL_PaletteFormat.IA8)
             {
-                int num3 = ((rgba & byte.MaxValue) + (rgba >> 8 & byte.MaxValue) + (rgba >> 16 & byte.MaxValue)) / 3 & byte.MaxValue;
+                int num3 =
+                    (
+                        (rgba & byte.MaxValue)
+                        + (rgba >> 8 & byte.MaxValue)
+                        + (rgba >> 16 & byte.MaxValue)
+                    ) / 3
+                    & byte.MaxValue;
                 num2 = (ushort)((rgba >> 24 & byte.MaxValue) << 8 | num3);
             }
             else if (paletteFormat == TPL_PaletteFormat.RGB565)
             {
-                num2 = (ushort)((rgba >> 16 & byte.MaxValue) >> 3 << 11 | (rgba >> 8 & byte.MaxValue) >> 2 << 5 | (rgba & byte.MaxValue) >> 3);
+                num2 = (ushort)(
+                    (rgba >> 16 & byte.MaxValue) >> 3 << 11
+                    | (rgba >> 8 & byte.MaxValue) >> 2 << 5
+                    | (rgba & byte.MaxValue) >> 3
+                );
             }
             else
             {

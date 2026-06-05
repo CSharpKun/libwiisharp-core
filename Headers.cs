@@ -1,13 +1,13 @@
-﻿/* This file is part of libWiiSharp
+﻿/* This file is part of LibWiiSharpCore
  * Copyright (C) 2009 Leathl
  * Copyright (C) 2020 - 2022 TheShadowEevee, Github Contributors
- * 
- * libWiiSharp is free software: you can redistribute it and/or
+ *
+ * LibWiiSharpCore is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * libWiiSharp is distributed in the hope that it will be
+ * LibWiiSharpCore is distributed in the hope that it will be
  * useful, but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -16,11 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.IO;
 using System.Security.Cryptography;
 
-namespace libWiiSharp
+namespace LibWiiSharpCore
 {
     public class Headers
     {
@@ -33,14 +31,17 @@ namespace libWiiSharp
         public enum HeaderType
         {
             None = 0,
+
             /// <summary>
             /// Used in banner.bin / icon.bin
             /// </summary>
             IMD5 = 32,
+
             /// <summary>
             /// Used in opening.bnr
             /// </summary>
             ShortIMET = 1536,
+
             /// <summary>
             /// Used in 00000000.app
             /// </summary>
@@ -65,17 +66,27 @@ namespace libWiiSharp
         /// <returns></returns>
         public static Headers.HeaderType DetectHeader(byte[] file)
         {
-            if (file.Length > 68 && (int)Shared.Swap(BitConverter.ToUInt32(file, 64)) == (int)imetMagic)
+            if (
+                file.Length > 68
+                && (int)Shared.Swap(BitConverter.ToUInt32(file, 64)) == (int)imetMagic
+            )
             {
                 return HeaderType.ShortIMET;
             }
 
-            if (file.Length > 132 && (int)Shared.Swap(BitConverter.ToUInt32(file, 128)) == (int)imetMagic)
+            if (
+                file.Length > 132
+                && (int)Shared.Swap(BitConverter.ToUInt32(file, 128)) == (int)imetMagic
+            )
             {
                 return HeaderType.IMET;
             }
 
-            return file.Length > 4 && (int)Shared.Swap(BitConverter.ToUInt32(file, 0)) == (int)imd5Magic ? HeaderType.IMD5 : HeaderType.None;
+            return
+                file.Length > 4
+                && (int)Shared.Swap(BitConverter.ToUInt32(file, 0)) == (int)imd5Magic
+                ? HeaderType.IMD5
+                : HeaderType.None;
         }
 
         /// <summary>
@@ -254,17 +265,18 @@ namespace libWiiSharp
             /// <summary>
             /// All Titles as a string array.
             /// </summary>
-            public string[] AllTitles => new string[8]
-            {
-                JapaneseTitle,
-                EnglishTitle,
-                GermanTitle,
-                FrenchTitle,
-                SpanishTitle,
-                ItalianTitle,
-                DutchTitle,
-                KoreanTitle
-            };
+            public string[] AllTitles =>
+                new string[8]
+                {
+                    JapaneseTitle,
+                    EnglishTitle,
+                    GermanTitle,
+                    FrenchTitle,
+                    SpanishTitle,
+                    ItalianTitle,
+                    DutchTitle,
+                    KoreanTitle,
+                };
 
             /// <summary>
             /// When parsing an IMET header, this value will turn false if the hash stored in the header doesn't match the headers hash.
@@ -356,12 +368,10 @@ namespace libWiiSharp
                 int iconSize,
                 int bannerSize,
                 int soundSize,
-                params string[] titles)
+                params string[] titles
+            )
             {
-                Headers.IMET imet = new Headers.IMET
-                {
-                    isShortImet = isShortImet
-                };
+                Headers.IMET imet = new Headers.IMET { isShortImet = isShortImet };
                 for (int titleIndex = 0; titleIndex < titles.Length; ++titleIndex)
                 {
                     imet.SetTitleFromString(titles[titleIndex], titleIndex);
@@ -482,16 +492,16 @@ namespace libWiiSharp
             public string[] GetTitles()
             {
                 return new string[8]
-{
-                JapaneseTitle,
-                EnglishTitle,
-                GermanTitle,
-                FrenchTitle,
-                SpanishTitle,
-                ItalianTitle,
-                DutchTitle,
-                KoreanTitle
-};
+                {
+                    JapaneseTitle,
+                    EnglishTitle,
+                    GermanTitle,
+                    FrenchTitle,
+                    SpanishTitle,
+                    ItalianTitle,
+                    DutchTitle,
+                    KoreanTitle,
+                };
             }
             #endregion
 
@@ -601,11 +611,10 @@ namespace libWiiSharp
                 string empty = string.Empty;
                 for (int index = 0; index < 84; index += 2)
                 {
-                    char ch = BitConverter.ToChar(new byte[2]
-                    {
-                        title[index + 1],
-                        title[index]
-                    }, 0);
+                    char ch = BitConverter.ToChar(
+                        new byte[2] { title[index + 1], title[index] },
+                        0
+                    );
                     if (ch != char.MinValue)
                     {
                         empty += ch.ToString();
@@ -671,9 +680,7 @@ namespace libWiiSharp
             /// </summary>
             public byte[] Hash => hash;
 
-            private IMD5()
-            {
-            }
+            private IMD5() { }
 
             #region Public Functions
             /// <summary>
@@ -737,10 +744,7 @@ namespace libWiiSharp
             /// <returns></returns>
             public static Headers.IMD5 Create(byte[] file)
             {
-                IMD5 imD5 = new IMD5
-                {
-                    fileSize = (uint)file.Length
-                };
+                IMD5 imD5 = new IMD5 { fileSize = (uint)file.Length };
                 imD5.PrivComputeHash(file);
                 return imD5;
             }

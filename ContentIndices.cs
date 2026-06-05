@@ -1,13 +1,14 @@
-﻿/* This file is part of libWiiSharp
+﻿/* This file is part of LibWiiSharpCore
  * Copyright (C) 2009 Leathl
  * Copyright (C) 2020 - 2022 TheShadowEevee, Github Contributors
- * 
- * libWiiSharp is free software: you can redistribute it and/or
+ * Copyright (C) 2026 CSharpKun
+ *
+ * LibWiiSharpCore is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * libWiiSharp is distributed in the hope that it will be
+ * LibWiiSharpCore is distributed in the hope that it will be
  * useful, but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -16,33 +17,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
+namespace LibWiiSharpCore;
 
-namespace libWiiSharp
+public readonly struct ContentIndices(int index, int contentIndex) : IComparable
 {
-    public struct ContentIndices : IComparable
+    private readonly int contentIndex = contentIndex;
+
+    public int Index => index;
+
+    public int ContentIndex => contentIndex;
+
+    public int CompareTo(object? obj)
     {
-        private readonly int index;
-        private readonly int contentIndex;
-
-        public int Index => index;
-
-        public int ContentIndex => contentIndex;
-
-        public ContentIndices(int index, int contentIndex)
+        if (obj is ContentIndices contentIndices)
         {
-            this.index = index;
-            this.contentIndex = contentIndex;
+            return contentIndex.CompareTo(contentIndices.contentIndex);
         }
 
-        public int CompareTo(object obj)
-        {
-            if (obj is ContentIndices contentIndices)
-            {
-                return contentIndex.CompareTo(contentIndices.contentIndex);
-            }
-
-            throw new ArgumentException();
-        }
+        throw new ArgumentException();
     }
 }

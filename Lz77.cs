@@ -1,13 +1,13 @@
-﻿/* This file is part of libWiiSharp
+﻿/* This file is part of LibWiiSharpCore
  * Copyright (C) 2009 Leathl
  * Copyright (C) 2020 - 2022 TheShadowEevee, Github Contributors
- * 
- * libWiiSharp is free software: you can redistribute it and/or
+ *
+ * LibWiiSharpCore is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * libWiiSharp is distributed in the hope that it will be
+ * LibWiiSharpCore is distributed in the hope that it will be
  * useful, but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -16,10 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.IO;
-
-namespace libWiiSharp
+namespace LibWiiSharpCore
 {
     public class Lz77
     {
@@ -197,7 +194,7 @@ namespace libWiiSharp
             uint num4 = 7;
             int num5 = 7;
             MemoryStream memoryStream = new MemoryStream();
-        label_10:
+            label_10:
             while (true)
             {
                 num4 <<= 1;
@@ -267,7 +264,7 @@ namespace libWiiSharp
                 }
                 goto label_10;
             }
-        label_24:
+            label_24:
             return memoryStream;
         }
 
@@ -314,7 +311,8 @@ namespace libWiiSharp
                     int[] numArray2 = numArray1;
                     int index1 = num3;
                     int num7 = index1 + 1;
-                    int num8 = (ushort)(r - this.matchPosition - 1 >> 8 & 15) | this.matchLength - 3 << 4;
+                    int num8 =
+                        (ushort)(r - this.matchPosition - 1 >> 8 & 15) | this.matchLength - 3 << 4;
                     numArray2[index1] = num8;
                     int[] numArray3 = numArray1;
                     int index2 = num7;
@@ -352,8 +350,7 @@ namespace libWiiSharp
                     if (--num5 != 0)
                         this.InsertNode(r);
                 }
-            }
-            while (num5 > 0);
+            } while (num5 > 0);
             if (num3 > 1)
             {
                 for (int index = 0; index < num3; ++index)
@@ -375,6 +372,7 @@ namespace libWiiSharp
             for (int index = 0; index < 4096; ++index)
                 this.dad[index] = 4096;
         }
+
         private void InsertNode(int r)
         {
             int num1 = 1;
@@ -407,13 +405,14 @@ namespace libWiiSharp
                         index = this.leftSon[index];
                     }
                     num2 = 1;
-                    while (num2 < 18 && (num1 = this.textBuffer[r + num2] - this.textBuffer[index + num2]) == 0)
+                    while (
+                        num2 < 18
+                        && (num1 = this.textBuffer[r + num2] - this.textBuffer[index + num2]) == 0
+                    )
                         ++num2;
-                }
-                while (num2 <= this.matchLength);
+                } while (num2 <= this.matchLength);
                 this.matchPosition = index;
-            }
-            while ((this.matchLength = num2) < 18);
+            } while ((this.matchLength = num2) < 18);
             this.dad[r] = this.dad[index];
             this.leftSon[r] = this.leftSon[index];
             this.rightSon[r] = this.rightSon[index];
@@ -425,6 +424,7 @@ namespace libWiiSharp
                 this.leftSon[this.dad[index]] = r;
             this.dad[index] = 4096;
         }
+
         private void DeleteNode(int p)
         {
             if (this.dad[p] == 4096)
@@ -444,8 +444,7 @@ namespace libWiiSharp
                     do
                     {
                         index = this.rightSon[index];
-                    }
-                    while (this.rightSon[index] != 4096);
+                    } while (this.rightSon[index] != 4096);
                     this.rightSon[this.dad[index]] = this.leftSon[index];
                     this.dad[this.leftSon[index]] = this.dad[index];
                     this.leftSon[index] = this.leftSon[p];

@@ -1,13 +1,13 @@
-﻿/* This file is part of libWiiSharp
+﻿/* This file is part of LibWiiSharpCore
  * Copyright (C) 2009 Leathl
  * Copyright (C) 2020 - 2022 TheShadowEevee, Github Contributors
- * 
- * libWiiSharp is free software: you can redistribute it and/or
+ *
+ * LibWiiSharpCore is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * libWiiSharp is distributed in the hope that it will be
+ * LibWiiSharpCore is distributed in the hope that it will be
  * useful, but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -16,12 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Net;
 
-namespace libWiiSharp
+namespace LibWiiSharpCore
 {
     public static class Shared
     {
@@ -40,11 +38,12 @@ namespace libWiiSharp
         }
 
         public static bool CompareByteArrays(
-          byte[] first,
-          int firstIndex,
-          byte[] second,
-          int secondIndex,
-          int length)
+            byte[] first,
+            int firstIndex,
+            byte[] second,
+            int secondIndex,
+            int length
+        )
         {
             if (first.Length < length || second.Length < length)
             {
@@ -94,7 +93,10 @@ namespace libWiiSharp
             byte[] numArray = new byte[hexString.Length / 2];
             for (int index = 0; index < hexString.Length / 2; ++index)
             {
-                numArray[index] = byte.Parse(hexString.Substring(index * 2, 2), NumberStyles.HexNumber);
+                numArray[index] = byte.Parse(
+                    hexString.Substring(index * 2, 2),
+                    NumberStyles.HexNumber
+                );
             }
 
             return numArray;

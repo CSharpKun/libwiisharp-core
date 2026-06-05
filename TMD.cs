@@ -1,13 +1,13 @@
-﻿/* This file is part of libWiiSharp
+﻿/* This file is part of LibWiiSharpCore
  * Copyright (C) 2009 Leathl
  * Copyright (C) 2020 - 2022 TheShadowEevee, Github Contributors
- * 
- * libWiiSharp is free software: you can redistribute it and/or
+ *
+ * LibWiiSharpCore is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * libWiiSharp is distributed in the hope that it will be
+ * LibWiiSharpCore is distributed in the hope that it will be
  * useful, but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -16,14 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Security.Cryptography;
 
-namespace libWiiSharp
+namespace LibWiiSharpCore
 {
-
     public enum Region : ushort
     {
         Japan,
@@ -38,6 +34,7 @@ namespace libWiiSharp
         DLC = 16385, // 0x4001
         Shared = 32769, // 0x8001
     }
+
     public class TMD : IDisposable
     {
         private bool fakeSign;
@@ -314,7 +311,9 @@ namespace libWiiSharp
                 string str1 = contentDir;
                 directorySeparatorChar = Path.DirectorySeparatorChar;
                 string str2 = directorySeparatorChar.ToString();
-                string str3 = flag ? contents[index].ContentID.ToString("x8") : contents[index].Index.ToString("x8");
+                string str3 = flag
+                    ? contents[index].ContentID.ToString("x8")
+                    : contents[index].Index.ToString("x8");
                 string path = str1 + str2 + str3 + ".app";
                 conts[index] = File.ReadAllBytes(path);
             }
@@ -329,13 +328,9 @@ namespace libWiiSharp
         public string GetUpperTitleID()
         {
             byte[] bytes = BitConverter.GetBytes(Shared.Swap((uint)titleId));
-            return new string(new char[4]
-            {
-        (char) bytes[0],
-        (char) bytes[1],
-        (char) bytes[2],
-        (char) bytes[3]
-            });
+            return new string(
+                new char[4] { (char)bytes[0], (char)bytes[1], (char)bytes[2], (char)bytes[3] }
+            );
         }
 
         public string GetNandBlocks()
@@ -401,45 +396,105 @@ namespace libWiiSharp
             }
             MemoryStream memoryStream = new MemoryStream();
             memoryStream.Seek(0L, SeekOrigin.Begin);
-            FireDebug("   Writing Signature Exponent... (Offset: 0x{0})", (object)memoryStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing Signature Exponent... (Offset: 0x{0})",
+                (object)memoryStream.Position.ToString("x8").ToUpper()
+            );
             memoryStream.Write(BitConverter.GetBytes(Shared.Swap(signatureExponent)), 0, 4);
-            FireDebug("   Writing Signature... (Offset: 0x{0})", (object)memoryStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing Signature... (Offset: 0x{0})",
+                (object)memoryStream.Position.ToString("x8").ToUpper()
+            );
             memoryStream.Write(signature, 0, signature.Length);
-            FireDebug("   Writing Padding... (Offset: 0x{0})", (object)memoryStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing Padding... (Offset: 0x{0})",
+                (object)memoryStream.Position.ToString("x8").ToUpper()
+            );
             memoryStream.Write(padding, 0, padding.Length);
-            FireDebug("   Writing Issuer... (Offset: 0x{0})", (object)memoryStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing Issuer... (Offset: 0x{0})",
+                (object)memoryStream.Position.ToString("x8").ToUpper()
+            );
             memoryStream.Write(issuer, 0, issuer.Length);
-            FireDebug("   Writing Version... (Offset: 0x{0})", (object)memoryStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing Version... (Offset: 0x{0})",
+                (object)memoryStream.Position.ToString("x8").ToUpper()
+            );
             memoryStream.WriteByte(version);
-            FireDebug("   Writing CA Crl Version... (Offset: 0x{0})", (object)memoryStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing CA Crl Version... (Offset: 0x{0})",
+                (object)memoryStream.Position.ToString("x8").ToUpper()
+            );
             memoryStream.WriteByte(caCrlVersion);
-            FireDebug("   Writing Signer Crl Version... (Offset: 0x{0})", (object)memoryStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing Signer Crl Version... (Offset: 0x{0})",
+                (object)memoryStream.Position.ToString("x8").ToUpper()
+            );
             memoryStream.WriteByte(signerCrlVersion);
-            FireDebug("   Writing Padding Byte... (Offset: 0x{0})", (object)memoryStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing Padding Byte... (Offset: 0x{0})",
+                (object)memoryStream.Position.ToString("x8").ToUpper()
+            );
             memoryStream.WriteByte(paddingByte);
-            FireDebug("   Writing Startup IOS... (Offset: 0x{0})", (object)memoryStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing Startup IOS... (Offset: 0x{0})",
+                (object)memoryStream.Position.ToString("x8").ToUpper()
+            );
             memoryStream.Write(BitConverter.GetBytes(Shared.Swap(startupIos)), 0, 8);
-            FireDebug("   Writing Title ID... (Offset: 0x{0})", (object)memoryStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing Title ID... (Offset: 0x{0})",
+                (object)memoryStream.Position.ToString("x8").ToUpper()
+            );
             memoryStream.Write(BitConverter.GetBytes(Shared.Swap(titleId)), 0, 8);
-            FireDebug("   Writing Title Type... (Offset: 0x{0})", (object)memoryStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing Title Type... (Offset: 0x{0})",
+                (object)memoryStream.Position.ToString("x8").ToUpper()
+            );
             memoryStream.Write(BitConverter.GetBytes(Shared.Swap(titleType)), 0, 4);
-            FireDebug("   Writing Group ID... (Offset: 0x{0})", (object)memoryStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing Group ID... (Offset: 0x{0})",
+                (object)memoryStream.Position.ToString("x8").ToUpper()
+            );
             memoryStream.Write(BitConverter.GetBytes(Shared.Swap(groupId)), 0, 2);
-            FireDebug("   Writing Padding2... (Offset: 0x{0})", (object)memoryStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing Padding2... (Offset: 0x{0})",
+                (object)memoryStream.Position.ToString("x8").ToUpper()
+            );
             memoryStream.Write(BitConverter.GetBytes(Shared.Swap(padding2)), 0, 2);
-            FireDebug("   Writing Region... (Offset: 0x{0})", (object)memoryStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing Region... (Offset: 0x{0})",
+                (object)memoryStream.Position.ToString("x8").ToUpper()
+            );
             memoryStream.Write(BitConverter.GetBytes(Shared.Swap(region)), 0, 2);
-            FireDebug("   Writing Reserved... (Offset: 0x{0})", (object)memoryStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing Reserved... (Offset: 0x{0})",
+                (object)memoryStream.Position.ToString("x8").ToUpper()
+            );
             memoryStream.Write(reserved, 0, reserved.Length);
-            FireDebug("   Writing Access Rights... (Offset: 0x{0})", (object)memoryStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing Access Rights... (Offset: 0x{0})",
+                (object)memoryStream.Position.ToString("x8").ToUpper()
+            );
             memoryStream.Write(BitConverter.GetBytes(Shared.Swap(accessRights)), 0, 4);
-            FireDebug("   Writing Title Version... (Offset: 0x{0})", (object)memoryStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing Title Version... (Offset: 0x{0})",
+                (object)memoryStream.Position.ToString("x8").ToUpper()
+            );
             memoryStream.Write(BitConverter.GetBytes(Shared.Swap(titleVersion)), 0, 2);
-            FireDebug("   Writing NumOfContents... (Offset: 0x{0})", (object)memoryStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing NumOfContents... (Offset: 0x{0})",
+                (object)memoryStream.Position.ToString("x8").ToUpper()
+            );
             memoryStream.Write(BitConverter.GetBytes(Shared.Swap(numOfContents)), 0, 2);
-            FireDebug("   Writing Boot Index... (Offset: 0x{0})", (object)memoryStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing Boot Index... (Offset: 0x{0})",
+                (object)memoryStream.Position.ToString("x8").ToUpper()
+            );
             memoryStream.Write(BitConverter.GetBytes(Shared.Swap(bootIndex)), 0, 2);
-            FireDebug("   Writing Padding3... (Offset: 0x{0})", (object)memoryStream.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Writing Padding3... (Offset: 0x{0})",
+                (object)memoryStream.Position.ToString("x8").ToUpper()
+            );
             memoryStream.Write(BitConverter.GetBytes(Shared.Swap(padding3)), 0, 2);
             List<ContentIndices> contentIndicesList = new List<ContentIndices>();
             for (int index = 0; index < contents.Count; ++index)
@@ -454,12 +509,45 @@ namespace libWiiSharp
 
             for (int index = 0; index < contentIndicesList.Count; ++index)
             {
-                FireDebug("   Writing Content #{1} of {2}... (Offset: 0x{0})", memoryStream.Position.ToString("x8").ToUpper().ToUpper(), index + 1, numOfContents);
-                memoryStream.Write(BitConverter.GetBytes(Shared.Swap(contents[contentIndicesList[index].Index].ContentID)), 0, 4);
-                memoryStream.Write(BitConverter.GetBytes(Shared.Swap(contents[contentIndicesList[index].Index].Index)), 0, 2);
-                memoryStream.Write(BitConverter.GetBytes(Shared.Swap((ushort)contents[contentIndicesList[index].Index].Type)), 0, 2);
-                memoryStream.Write(BitConverter.GetBytes(Shared.Swap(contents[contentIndicesList[index].Index].Size)), 0, 8);
-                memoryStream.Write(contents[contentIndicesList[index].Index].Hash, 0, contents[contentIndicesList[index].Index].Hash.Length);
+                FireDebug(
+                    "   Writing Content #{1} of {2}... (Offset: 0x{0})",
+                    memoryStream.Position.ToString("x8").ToUpper().ToUpper(),
+                    index + 1,
+                    numOfContents
+                );
+                memoryStream.Write(
+                    BitConverter.GetBytes(
+                        Shared.Swap(contents[contentIndicesList[index].Index].ContentID)
+                    ),
+                    0,
+                    4
+                );
+                memoryStream.Write(
+                    BitConverter.GetBytes(
+                        Shared.Swap(contents[contentIndicesList[index].Index].Index)
+                    ),
+                    0,
+                    2
+                );
+                memoryStream.Write(
+                    BitConverter.GetBytes(
+                        Shared.Swap((ushort)contents[contentIndicesList[index].Index].Type)
+                    ),
+                    0,
+                    2
+                );
+                memoryStream.Write(
+                    BitConverter.GetBytes(
+                        Shared.Swap(contents[contentIndicesList[index].Index].Size)
+                    ),
+                    0,
+                    8
+                );
+                memoryStream.Write(
+                    contents[contentIndicesList[index].Index].Hash,
+                    0,
+                    contents[contentIndicesList[index].Index].Hash.Length
+                );
             }
             byte[] array = memoryStream.ToArray();
             memoryStream.Dispose();
@@ -507,51 +595,111 @@ namespace libWiiSharp
             FireDebug("Pasing TMD...");
             tmdFile.Seek(0L, SeekOrigin.Begin);
             byte[] buffer = new byte[8];
-            FireDebug("   Reading Signature Exponent... (Offset: 0x{0})", (object)tmdFile.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Reading Signature Exponent... (Offset: 0x{0})",
+                (object)tmdFile.Position.ToString("x8").ToUpper()
+            );
             tmdFile.Read(buffer, 0, 4);
             signatureExponent = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
-            FireDebug("   Reading Signature... (Offset: 0x{0})", (object)tmdFile.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Reading Signature... (Offset: 0x{0})",
+                (object)tmdFile.Position.ToString("x8").ToUpper()
+            );
             tmdFile.Read(signature, 0, signature.Length);
-            FireDebug("   Reading Padding... (Offset: 0x{0})", (object)tmdFile.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Reading Padding... (Offset: 0x{0})",
+                (object)tmdFile.Position.ToString("x8").ToUpper()
+            );
             tmdFile.Read(padding, 0, padding.Length);
-            FireDebug("   Reading Issuer... (Offset: 0x{0})", (object)tmdFile.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Reading Issuer... (Offset: 0x{0})",
+                (object)tmdFile.Position.ToString("x8").ToUpper()
+            );
             tmdFile.Read(issuer, 0, issuer.Length);
-            FireDebug("   Reading Version... (Offset: 0x{0})", (object)tmdFile.Position.ToString("x8").ToUpper());
-            FireDebug("   Reading CA Crl Version... (Offset: 0x{0})", (object)tmdFile.Position.ToString("x8").ToUpper());
-            FireDebug("   Reading Signer Crl Version... (Offset: 0x{0})", (object)tmdFile.Position.ToString("x8").ToUpper());
-            FireDebug("   Reading Padding Byte... (Offset: 0x{0})", (object)tmdFile.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Reading Version... (Offset: 0x{0})",
+                (object)tmdFile.Position.ToString("x8").ToUpper()
+            );
+            FireDebug(
+                "   Reading CA Crl Version... (Offset: 0x{0})",
+                (object)tmdFile.Position.ToString("x8").ToUpper()
+            );
+            FireDebug(
+                "   Reading Signer Crl Version... (Offset: 0x{0})",
+                (object)tmdFile.Position.ToString("x8").ToUpper()
+            );
+            FireDebug(
+                "   Reading Padding Byte... (Offset: 0x{0})",
+                (object)tmdFile.Position.ToString("x8").ToUpper()
+            );
             tmdFile.Read(buffer, 0, 4);
             version = buffer[0];
             caCrlVersion = buffer[1];
             signerCrlVersion = buffer[2];
             paddingByte = buffer[3];
-            FireDebug("   Reading Startup IOS... (Offset: 0x{0})", (object)tmdFile.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Reading Startup IOS... (Offset: 0x{0})",
+                (object)tmdFile.Position.ToString("x8").ToUpper()
+            );
             tmdFile.Read(buffer, 0, 8);
             startupIos = Shared.Swap(BitConverter.ToUInt64(buffer, 0));
-            FireDebug("   Reading Title ID... (Offset: 0x{0})", (object)tmdFile.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Reading Title ID... (Offset: 0x{0})",
+                (object)tmdFile.Position.ToString("x8").ToUpper()
+            );
             tmdFile.Read(buffer, 0, 8);
             titleId = Shared.Swap(BitConverter.ToUInt64(buffer, 0));
-            FireDebug("   Reading Title Type... (Offset: 0x{0})", (object)tmdFile.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Reading Title Type... (Offset: 0x{0})",
+                (object)tmdFile.Position.ToString("x8").ToUpper()
+            );
             tmdFile.Read(buffer, 0, 4);
             titleType = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
-            FireDebug("   Reading Group ID... (Offset: 0x{0})", (object)tmdFile.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Reading Group ID... (Offset: 0x{0})",
+                (object)tmdFile.Position.ToString("x8").ToUpper()
+            );
             tmdFile.Read(buffer, 0, 2);
             groupId = Shared.Swap(BitConverter.ToUInt16(buffer, 0));
-            FireDebug("   Reading Padding2... (Offset: 0x{0})", (object)tmdFile.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Reading Padding2... (Offset: 0x{0})",
+                (object)tmdFile.Position.ToString("x8").ToUpper()
+            );
             tmdFile.Read(buffer, 0, 2);
             padding2 = Shared.Swap(BitConverter.ToUInt16(buffer, 0));
-            FireDebug("   Reading Region... (Offset: 0x{0})", (object)tmdFile.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Reading Region... (Offset: 0x{0})",
+                (object)tmdFile.Position.ToString("x8").ToUpper()
+            );
             tmdFile.Read(buffer, 0, 2);
             region = Shared.Swap(BitConverter.ToUInt16(buffer, 0));
-            FireDebug("   Reading Reserved... (Offset: 0x{0})", (object)tmdFile.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Reading Reserved... (Offset: 0x{0})",
+                (object)tmdFile.Position.ToString("x8").ToUpper()
+            );
             tmdFile.Read(reserved, 0, reserved.Length);
-            FireDebug("   Reading Access Rights... (Offset: 0x{0})", (object)tmdFile.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Reading Access Rights... (Offset: 0x{0})",
+                (object)tmdFile.Position.ToString("x8").ToUpper()
+            );
             tmdFile.Read(buffer, 0, 4);
             accessRights = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
-            FireDebug("   Reading Title Version... (Offset: 0x{0})", (object)tmdFile.Position.ToString("x8").ToUpper());
-            FireDebug("   Reading NumOfContents... (Offset: 0x{0})", (object)tmdFile.Position.ToString("x8").ToUpper());
-            FireDebug("   Reading Boot Index... (Offset: 0x{0})", (object)tmdFile.Position.ToString("x8").ToUpper());
-            FireDebug("   Reading Padding3... (Offset: 0x{0})", (object)tmdFile.Position.ToString("x8").ToUpper());
+            FireDebug(
+                "   Reading Title Version... (Offset: 0x{0})",
+                (object)tmdFile.Position.ToString("x8").ToUpper()
+            );
+            FireDebug(
+                "   Reading NumOfContents... (Offset: 0x{0})",
+                (object)tmdFile.Position.ToString("x8").ToUpper()
+            );
+            FireDebug(
+                "   Reading Boot Index... (Offset: 0x{0})",
+                (object)tmdFile.Position.ToString("x8").ToUpper()
+            );
+            FireDebug(
+                "   Reading Padding3... (Offset: 0x{0})",
+                (object)tmdFile.Position.ToString("x8").ToUpper()
+            );
             tmdFile.Read(buffer, 0, 8);
             titleVersion = Shared.Swap(BitConverter.ToUInt16(buffer, 0));
             numOfContents = Shared.Swap(BitConverter.ToUInt16(buffer, 2));
@@ -560,11 +708,13 @@ namespace libWiiSharp
             contents = new List<TMD_Content>();
             for (int index = 0; index < numOfContents; ++index)
             {
-                FireDebug("   Reading Content #{0} of {1}... (Offset: 0x{2})", index + 1, numOfContents, tmdFile.Position.ToString("x8").ToUpper().ToUpper());
-                TMD_Content tmdContent = new TMD_Content
-                {
-                    Hash = new byte[20]
-                };
+                FireDebug(
+                    "   Reading Content #{0} of {1}... (Offset: 0x{2})",
+                    index + 1,
+                    numOfContents,
+                    tmdFile.Position.ToString("x8").ToUpper().ToUpper()
+                );
+                TMD_Content tmdContent = new TMD_Content { Hash = new byte[20] };
                 tmdFile.Read(buffer, 0, 8);
                 tmdContent.ContentID = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
                 tmdContent.Index = Shared.Swap(BitConverter.ToUInt16(buffer, 4));
@@ -644,5 +794,4 @@ namespace libWiiSharp
             set => hash = value;
         }
     }
-
 }

@@ -34,19 +34,17 @@ namespace LibWiiSharpCore
 
     public class WAD : IDisposable
     {
-        private SHA1 sha = SHA1.Create();
-        private DateTime creationTimeUTC = new DateTime(1970, 1, 1);
+        private readonly SHA1 sha = SHA1.Create();
         private bool hasBanner;
         private bool lz77CompressBannerAndIcon = true;
         private bool lz77DecompressBannerAndIcon;
         private bool keepOriginalFooter;
         private WAD_Header wadHeader;
-        private CertificateChain cert = new CertificateChain();
-        private Ticket tik = new Ticket();
-        private TMD tmd = new TMD();
+        private CertificateChain cert = new();
+        private Ticket tik = new();
+        private TMD tmd = new();
         private List<byte[]> contents;
-        private U8 bannerApp = new U8();
-        private byte[] footer = new byte[0];
+        private byte[] footer = [];
         private bool isDisposed;
 
         public Region Region
@@ -57,7 +55,7 @@ namespace LibWiiSharpCore
 
         public int NumOfContents => tmd.NumOfContents;
 
-        public byte[][] Contents => contents.ToArray();
+        public byte[][] Contents => [.. contents];
 
         public bool FakeSign
         {
@@ -69,11 +67,7 @@ namespace LibWiiSharpCore
             }
         }
 
-        public U8 BannerApp
-        {
-            get => bannerApp;
-            set => bannerApp = value;
-        }
+        public U8 BannerApp { get; set; } = new U8();
 
         public ulong StartupIOS
         {
@@ -105,7 +99,7 @@ namespace LibWiiSharpCore
             set => tmd.BootIndex = value;
         }
 
-        public DateTime CreationTimeUTC => creationTimeUTC;
+        public DateTime CreationTimeUTC { get; private set; } = new DateTime(1970, 1, 1);
 
         public bool HasBanner => hasBanner;
 
@@ -143,7 +137,7 @@ namespace LibWiiSharpCore
 
         public string[] ChannelTitles
         {
-            get => hasBanner ? ((Headers.IMET)bannerApp.Header).AllTitles : new string[0];
+            get => hasBanner ? ((Headers.IMET)BannerApp.Header).AllTitles : [];
             set => ChangeChannelTitles(value);
         }
 
@@ -178,8 +172,8 @@ namespace LibWiiSharpCore
             cert.Debug += new EventHandler<MessageEventArgs>(Cert_Debug);
             tik.Debug += new EventHandler<MessageEventArgs>(Tik_Debug);
             tmd.Debug += new EventHandler<MessageEventArgs>(Tmd_Debug);
-            bannerApp.Debug += new EventHandler<MessageEventArgs>(BannerApp_Debug);
-            bannerApp.Warning += new EventHandler<MessageEventArgs>(BannerApp_Warning);
+            BannerApp.Debug += new EventHandler<MessageEventArgs>(BannerApp_Debug);
+            BannerApp.Warning += new EventHandler<MessageEventArgs>(BannerApp_Warning);
         }
 
         ~WAD() => Dispose(false);
@@ -192,19 +186,13 @@ namespace LibWiiSharpCore
 
         protected virtual void Dispose(bool disposing)
         {
-            if (disposing && !isDisposed)
-            {
-                sha.Clear();
-                sha = null;
-                wadHeader = null;
-                cert.Dispose();
-                tik.Dispose();
-                tmd.Dispose();
-                contents.Clear();
-                contents = null;
-                bannerApp.Dispose();
-                footer = null;
-            }
+            if (disposing && !isDisposed) { }
+            sha.Dispose();
+            cert.Dispose();
+            tik.Dispose();
+            tmd.Dispose();
+            contents.Clear();
+            BannerApp.Dispose();
             isDisposed = true;
         }
 
@@ -215,8 +203,8 @@ namespace LibWiiSharpCore
 
         public static WAD Load(byte[] wadFile)
         {
-            WAD wad = new WAD();
-            MemoryStream memoryStream = new MemoryStream(wadFile);
+            WAD wad = new();
+            MemoryStream memoryStream = new(wadFile);
             try
             {
                 wad.ParseWad(memoryStream);
@@ -232,7 +220,7 @@ namespace LibWiiSharpCore
 
         public static WAD Load(Stream wad)
         {
-            WAD wad1 = new WAD();
+            WAD wad1 = new();
             wad1.ParseWad(wad);
             return wad1;
         }
@@ -368,12 +356,12 @@ namespace LibWiiSharpCore
 
         public static WAD Create(CertificateChain cert, Ticket tik, TMD tmd, byte[][] contents)
         {
-            WAD wad = new WAD()
+            WAD wad = new()
             {
                 cert = cert,
                 tik = tik,
                 tmd = tmd,
-                contents = new List<byte[]>(contents),
+                contents = [.. contents],
                 wadHeader = new WAD_Header(),
             };
             wad.wadHeader.TmdSize = (uint)(484 + tmd.Contents.Length * 36);
@@ -383,7 +371,7 @@ namespace LibWiiSharpCore
                 num1 += Shared.AddPadding(contents[index].Length);
             }
 
-            int num2 = num1 + contents[contents.Length - 1].Length;
+            int num2 = num1 + contents[^1].Length;
             wad.wadHeader.ContentSize = (uint)num2;
             for (int index = 0; index < wad.tmd.Contents.Length; ++index)
             {
@@ -391,7 +379,7 @@ namespace LibWiiSharpCore
                 {
                     try
                     {
-                        wad.bannerApp.LoadFile(contents[index]);
+                        wad.BannerApp.LoadFile(contents[index]);
                         wad.hasBanner = true;
                         return wad;
                     }
@@ -412,7 +400,7 @@ namespace LibWiiSharpCore
 
         public void LoadFile(byte[] wadFile)
         {
-            MemoryStream memoryStream = new MemoryStream(wadFile);
+            MemoryStream memoryStream = new(wadFile);
             try
             {
                 ParseWad(memoryStream);
@@ -558,7 +546,7 @@ namespace LibWiiSharpCore
             this.cert = cert;
             this.tik = tik;
             this.tmd = tmd;
-            this.contents = new List<byte[]>(contents);
+            this.contents = [.. contents];
             wadHeader = new WAD_Header { TmdSize = (uint)(484 + tmd.Contents.Length * 36) };
             int num = 0;
             for (int index = 0; index < contents.Length - 1; ++index)
@@ -566,14 +554,14 @@ namespace LibWiiSharpCore
                 num += Shared.AddPadding(contents[index].Length);
             }
 
-            wadHeader.ContentSize = (uint)(num + contents[contents.Length - 1].Length);
+            wadHeader.ContentSize = (uint)(num + contents[^1].Length);
             for (int index = 0; index < this.tmd.Contents.Length; ++index)
             {
                 if (this.tmd.Contents[index].Index == 0)
                 {
                     try
                     {
-                        bannerApp.LoadFile(contents[index]);
+                        BannerApp.LoadFile(contents[index]);
                         hasBanner = true;
                         break;
                     }
@@ -593,13 +581,13 @@ namespace LibWiiSharpCore
                 File.Delete(savePath);
             }
 
-            using FileStream fileStream = new FileStream(savePath, FileMode.Create);
+            using FileStream fileStream = new(savePath, FileMode.Create);
             WriteToStream(fileStream);
         }
 
         public MemoryStream ToMemoryStream()
         {
-            MemoryStream memoryStream = new MemoryStream();
+            MemoryStream memoryStream = new();
             try
             {
                 WriteToStream(memoryStream);
@@ -614,7 +602,7 @@ namespace LibWiiSharpCore
 
         public byte[] ToByteArray()
         {
-            MemoryStream memoryStream = new MemoryStream();
+            MemoryStream memoryStream = new();
             try
             {
                 WriteToStream(memoryStream);
@@ -634,13 +622,7 @@ namespace LibWiiSharpCore
             uint num1 =
                 upperID.Length == 4
                     ? BitConverter.ToUInt32(
-                        new byte[4]
-                        {
-                            (byte)upperID[3],
-                            (byte)upperID[2],
-                            (byte)upperID[1],
-                            (byte)upperID[0],
-                        },
+                        [(byte)upperID[3], (byte)upperID[2], (byte)upperID[1], (byte)upperID[0]],
                         0
                     )
                     : throw new Exception("Upper Title ID must be 4 characters long!");
@@ -699,7 +681,7 @@ namespace LibWiiSharpCore
             {
                 return;
             }
-            ((Headers.IMET)bannerApp.Header).ChangeTitles(newTitles);
+            ((Headers.IMET)BannerApp.Header).ChangeTitles(newTitles);
         }
 
         public void AddContent(
@@ -757,8 +739,8 @@ namespace LibWiiSharpCore
         {
             if (!hasBanner)
             {
-                tmd.Contents = new TMD_Content[0];
-                contents = new List<byte[]>();
+                tmd.Contents = [];
+                contents = [];
                 wadHeader.TmdSize = (uint)(484 + tmd.NumOfContents * 36);
             }
             else
@@ -769,8 +751,8 @@ namespace LibWiiSharpCore
                     {
                         byte[] content1 = contents[index];
                         TMD_Content content2 = tmd.Contents[index];
-                        tmd.Contents = new TMD_Content[0];
-                        contents = new List<byte[]>();
+                        tmd.Contents = [];
+                        contents = [];
                         tmd.AddContent(content2);
                         contents.Add(content1);
                         wadHeader.TmdSize = (uint)(484 + tmd.NumOfContents * 36);
@@ -787,7 +769,7 @@ namespace LibWiiSharpCore
 
         public void RemoveFooter()
         {
-            footer = new byte[0];
+            footer = [];
             wadHeader.FooterSize = 0U;
             keepOriginalFooter = true;
         }
@@ -821,44 +803,48 @@ namespace LibWiiSharpCore
             {
                 if (lz77CompressBannerAndIcon || lz77DecompressBannerAndIcon)
                 {
-                    for (int index = 0; index < bannerApp.Nodes.Count; ++index)
+                    for (int index = 0; index < BannerApp.Nodes.Count; ++index)
                     {
                         if (
-                            bannerApp.StringTable[index].ToLower() == "icon.bin"
-                            || bannerApp.StringTable[index].ToLower() == "banner.bin"
+                            BannerApp
+                                .StringTable[index]
+                                .Equals("icon.bin", StringComparison.OrdinalIgnoreCase)
+                            || BannerApp
+                                .StringTable[index]
+                                .Equals("banner.bin", StringComparison.OrdinalIgnoreCase)
                         )
                         {
                             if (
-                                !Lz77.IsLz77Compressed(bannerApp.Data[index])
+                                !Lz77.IsLz77Compressed(BannerApp.Data[index])
                                 && lz77CompressBannerAndIcon
                             )
                             {
                                 FireDebug(
                                     "   Compressing {0}...",
-                                    (object)bannerApp.StringTable[index]
+                                    (object)BannerApp.StringTable[index]
                                 );
-                                byte[] file = new byte[bannerApp.Data[index].Length - 32];
-                                Array.Copy(bannerApp.Data[index], 32, file, 0, file.Length);
+                                byte[] file = new byte[BannerApp.Data[index].Length - 32];
+                                Array.Copy(BannerApp.Data[index], 32, file, 0, file.Length);
                                 byte[] numArray = Headers.IMD5.AddHeader(new Lz77().Compress(file));
-                                bannerApp.Data[index] = numArray;
-                                bannerApp.Nodes[index].SizeOfData = (uint)numArray.Length;
+                                BannerApp.Data[index] = numArray;
+                                BannerApp.Nodes[index].SizeOfData = (uint)numArray.Length;
                             }
                             else if (
-                                Lz77.IsLz77Compressed(bannerApp.Data[index])
+                                Lz77.IsLz77Compressed(BannerApp.Data[index])
                                 && lz77DecompressBannerAndIcon
                             )
                             {
                                 FireDebug(
                                     "   Decompressing {0}...",
-                                    (object)bannerApp.StringTable[index]
+                                    (object)BannerApp.StringTable[index]
                                 );
-                                byte[] file = new byte[bannerApp.Data[index].Length - 32];
-                                Array.Copy(bannerApp.Data[index], 32, file, 0, file.Length);
+                                byte[] file = new byte[BannerApp.Data[index].Length - 32];
+                                Array.Copy(BannerApp.Data[index], 32, file, 0, file.Length);
                                 byte[] numArray = Headers.IMD5.AddHeader(
                                     new Lz77().Decompress(file)
                                 );
-                                bannerApp.Data[index] = numArray;
-                                bannerApp.Nodes[index].SizeOfData = (uint)numArray.Length;
+                                BannerApp.Data[index] = numArray;
+                                BannerApp.Nodes[index].SizeOfData = (uint)numArray.Length;
                             }
                         }
                     }
@@ -868,7 +854,7 @@ namespace LibWiiSharpCore
                     if (tmd.Contents[index].Index == 0)
                     {
                         FireDebug("   Saving Banner App...");
-                        contents[index] = bannerApp.ToByteArray();
+                        contents[index] = BannerApp.ToByteArray();
                         break;
                     }
                 }
@@ -880,10 +866,10 @@ namespace LibWiiSharpCore
                 num += Shared.AddPadding(contents[index].Length);
             }
 
-            wadHeader.ContentSize = (uint)(num + contents[contents.Count - 1].Length);
+            wadHeader.ContentSize = (uint)(num + contents[^1].Length);
             wadHeader.TmdSize = (uint)(484 + tmd.NumOfContents * 36);
             FireDebug("   Updating TMD Contents...");
-            tmd.UpdateContents(contents.ToArray());
+            tmd.UpdateContents([.. contents]);
             FireDebug(
                 "   Writing Wad Header... (Offset: 0x{0})",
                 (object)writeStream.Position.ToString("x8").ToUpper()
@@ -1043,10 +1029,7 @@ namespace LibWiiSharpCore
                     str13 = this.tmd.Contents[index].ContentID.ToString("x8");
                 }
 
-                using FileStream fileStream = new FileStream(
-                    str11 + str12 + str13 + ".app",
-                    FileMode.Create
-                );
+                using FileStream fileStream = new(str11 + str12 + str13 + ".app", FileMode.Create);
                 fileStream.Write(contents[index], 0, contents[index].Length);
             }
             FireDebug("   Saving Footer: {0}.footer", (object)str1);
@@ -1054,12 +1037,7 @@ namespace LibWiiSharpCore
             directorySeparatorChar = Path.DirectorySeparatorChar;
             string str15 = directorySeparatorChar.ToString();
             string str16 = str1;
-            using (
-                FileStream fileStream = new FileStream(
-                    str14 + str15 + str16 + ".footer",
-                    FileMode.Create
-                )
-            )
+            using (FileStream fileStream = new(str14 + str15 + str16 + ".footer", FileMode.Create))
             {
                 fileStream.Write(footer, 0, footer.Length);
             }
@@ -1072,26 +1050,26 @@ namespace LibWiiSharpCore
             FireDebug("Parsing Wad...");
             wadFile.Seek(0L, SeekOrigin.Begin);
             byte[] buffer = new byte[4];
-            wadHeader = new WAD_Header();
-            contents = new List<byte[]>();
+            wadHeader = new();
+            contents = [];
             FireDebug(
                 "   Parsing Header... (Offset: 0x{0})",
                 (object)wadFile.Position.ToString("x8").ToUpper()
             );
-            wadFile.Read(buffer, 0, 4);
+            wadFile.ReadExactly(buffer);
             if ((int)Shared.Swap(BitConverter.ToUInt32(buffer, 0)) != (int)wadHeader.HeaderSize)
             {
                 throw new Exception("Invalid Headersize!");
             }
 
-            wadFile.Read(buffer, 0, 4);
+            wadFile.ReadExactly(buffer);
             wadHeader.WadType = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
             wadFile.Seek(12L, SeekOrigin.Current);
-            wadFile.Read(buffer, 0, 4);
+            wadFile.ReadExactly(buffer);
             wadHeader.TmdSize = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
-            wadFile.Read(buffer, 0, 4);
+            wadFile.ReadExactly(buffer);
             wadHeader.ContentSize = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
-            wadFile.Read(buffer, 0, 4);
+            wadFile.ReadExactly(buffer);
             wadHeader.FooterSize = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
             FireDebug(
                 "   Parsing Certificate Chain... (Offset: 0x{0})",
@@ -1099,7 +1077,7 @@ namespace LibWiiSharpCore
             );
             wadFile.Seek(Shared.AddPadding((int)wadFile.Position), SeekOrigin.Begin);
             byte[] numArray1 = new byte[(int)wadHeader.CertSize];
-            wadFile.Read(numArray1, 0, numArray1.Length);
+            wadFile.ReadExactly(numArray1);
             cert.LoadFile(numArray1);
             FireDebug(
                 "   Parsing Ticket... (Offset: 0x{0})",
@@ -1107,7 +1085,7 @@ namespace LibWiiSharpCore
             );
             wadFile.Seek(Shared.AddPadding((int)wadFile.Position), SeekOrigin.Begin);
             byte[] numArray2 = new byte[(int)wadHeader.TicketSize];
-            wadFile.Read(numArray2, 0, numArray2.Length);
+            wadFile.ReadExactly(numArray2);
             tik.LoadFile(numArray2);
             FireDebug(
                 "   Parsing TMD... (Offset: 0x{0})",
@@ -1115,7 +1093,7 @@ namespace LibWiiSharpCore
             );
             wadFile.Seek(Shared.AddPadding((int)wadFile.Position), SeekOrigin.Begin);
             byte[] numArray3 = new byte[(int)wadHeader.TmdSize];
-            wadFile.Read(numArray3, 0, numArray3.Length);
+            wadFile.ReadExactly(numArray3);
             tmd.LoadFile(numArray3);
             if ((long)tmd.TitleID != (long)tik.TitleID)
             {
@@ -1126,7 +1104,7 @@ namespace LibWiiSharpCore
             for (int contentIndex = 0; contentIndex < tmd.NumOfContents; ++contentIndex)
             {
                 FireProgress((contentIndex + 1) * 100 / tmd.NumOfContents);
-                object[] objArray1 = new object[3] { contentIndex + 1, tmd.NumOfContents, null };
+                object?[] objArray1 = [contentIndex + 1, tmd.NumOfContents, null];
                 position = wadFile.Position;
                 objArray1[2] = position.ToString("x8").ToUpper();
                 FireDebug("   Reading Content #{0} of {1}... (Offset: 0x{2})", objArray1);
@@ -1152,7 +1130,7 @@ namespace LibWiiSharpCore
                 byte[] numArray4 = new byte[
                     Shared.AddPadding((int)tmd.Contents[contentIndex].Size, 16)
                 ];
-                wadFile.Read(numArray4, 0, numArray4.Length);
+                wadFile.ReadExactly(numArray4);
                 byte[] array = DecryptContent(numArray4, contentIndex);
                 Array.Resize<byte>(ref array, (int)tmd.Contents[contentIndex].Size);
                 if (
@@ -1182,7 +1160,7 @@ namespace LibWiiSharpCore
                 {
                     try
                     {
-                        bannerApp.LoadFile(array);
+                        BannerApp.LoadFile(array);
                         hasBanner = true;
                     }
                     catch
@@ -1199,7 +1177,7 @@ namespace LibWiiSharpCore
                 FireDebug("   Reading Footer... (Offset: 0x{0})", objArray);
                 footer = new byte[(int)wadHeader.FooterSize];
                 wadFile.Seek(Shared.AddPadding((int)wadFile.Position), SeekOrigin.Begin);
-                wadFile.Read(footer, 0, footer.Length);
+                wadFile.ReadExactly(footer);
                 ParseFooterTimestamp();
             }
             FireDebug("Parsing Wad Finished...");
@@ -1214,26 +1192,18 @@ namespace LibWiiSharpCore
             byte[] bytes = BitConverter.GetBytes(tmd.Contents[contentIndex].Index);
             numArray[0] = bytes[1];
             numArray[1] = bytes[0];
-#pragma warning disable SYSLIB0022 // Type or member is obsolete
-            RijndaelManaged rijndaelManaged = new RijndaelManaged
-            {
-                Mode = CipherMode.CBC,
-                Padding = PaddingMode.None,
-                KeySize = 128,
-                BlockSize = 128,
-                Key = titleKey,
-                IV = numArray,
-            };
-#pragma warning restore SYSLIB0022 // Type or member is obsolete
-            ICryptoTransform decryptor = rijndaelManaged.CreateDecryptor();
-            MemoryStream memoryStream = new MemoryStream(content);
-            CryptoStream cryptoStream = new CryptoStream(
-                memoryStream,
-                decryptor,
-                CryptoStreamMode.Read
-            );
+            Aes aes = Aes.Create();
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.None;
+            aes.KeySize = 128;
+            aes.BlockSize = 128;
+            aes.Key = titleKey;
+            aes.IV = numArray;
+            ICryptoTransform decryptor = aes.CreateDecryptor();
+            MemoryStream memoryStream = new(content);
+            CryptoStream cryptoStream = new(memoryStream, decryptor, CryptoStreamMode.Read);
             byte[] buffer = new byte[length];
-            cryptoStream.Read(buffer, 0, buffer.Length);
+            cryptoStream.ReadExactly(buffer);
             cryptoStream.Dispose();
             memoryStream.Dispose();
             return buffer;
@@ -1247,26 +1217,18 @@ namespace LibWiiSharpCore
             byte[] bytes = BitConverter.GetBytes(tmd.Contents[contentIndex].Index);
             numArray[0] = bytes[1];
             numArray[1] = bytes[0];
-#pragma warning disable SYSLIB0022 // Type or member is obsolete
-            RijndaelManaged rijndaelManaged = new RijndaelManaged
-            {
-                Mode = CipherMode.CBC,
-                Padding = PaddingMode.None,
-                KeySize = 128,
-                BlockSize = 128,
-                Key = titleKey,
-                IV = numArray,
-            };
-#pragma warning restore SYSLIB0022 // Type or member is obsolete
-            ICryptoTransform encryptor = rijndaelManaged.CreateEncryptor();
-            MemoryStream memoryStream = new MemoryStream(content);
-            CryptoStream cryptoStream = new CryptoStream(
-                memoryStream,
-                encryptor,
-                CryptoStreamMode.Read
-            );
+            Aes aes = Aes.Create();
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.None;
+            aes.KeySize = 128;
+            aes.BlockSize = 128;
+            aes.Key = titleKey;
+            aes.IV = numArray;
+            ICryptoTransform encryptor = aes.CreateEncryptor();
+            MemoryStream memoryStream = new(content);
+            CryptoStream cryptoStream = new(memoryStream, encryptor, CryptoStreamMode.Read);
             byte[] buffer = new byte[content.Length];
-            cryptoStream.Read(buffer, 0, buffer.Length);
+            cryptoStream.ReadExactly(buffer);
             cryptoStream.Dispose();
             memoryStream.Dispose();
             return buffer;
@@ -1287,7 +1249,7 @@ namespace LibWiiSharpCore
 
         private void ParseFooterTimestamp()
         {
-            creationTimeUTC = new DateTime(1970, 1, 1);
+            CreationTimeUTC = new DateTime(1970, 1, 1);
             if (
                 (
                     footer[0] != 67
@@ -1314,7 +1276,7 @@ namespace LibWiiSharpCore
                 return;
             }
 
-            creationTimeUTC = creationTimeUTC.AddSeconds(num);
+            CreationTimeUTC = CreationTimeUTC.AddSeconds(num);
         }
 
         private void FireDebug(string debugMessage, params object[] args)

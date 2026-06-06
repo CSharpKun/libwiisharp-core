@@ -1,6 +1,7 @@
 ﻿/* This file is part of LibWiiSharpCore
  * Copyright (C) 2009 Leathl
  * Copyright (C) 2020 - 2022 TheShadowEevee, Github Contributors
+ * Copyright (C) 2026 CSharpKun
  *
  * LibWiiSharpCore is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as published
@@ -68,7 +69,7 @@ namespace LibWiiSharpCore
             Headers.HeaderType headerType = Headers.DetectHeader(file);
             byte[] buffer = new byte[4];
             file.Seek((long)headerType, SeekOrigin.Begin);
-            file.Read(buffer, 0, buffer.Length);
+            file.ReadExactly(buffer);
             return (int)Shared.Swap(BitConverter.ToUInt32(buffer, 0)) == (int)lz77Magic;
         }
 
@@ -79,20 +80,20 @@ namespace LibWiiSharpCore
         /// <param name="outFile"></param>
         public void Compress(string inFile, string outFile)
         {
-            Stream stream = null;
-            using (FileStream fileStream = new FileStream(inFile, FileMode.Open))
+            Stream stream;
+            using (FileStream fileStream = new(inFile, FileMode.Open))
             {
                 stream = PrivCompress(fileStream);
             }
 
             byte[] buffer = new byte[stream.Length];
-            stream.Read(buffer, 0, buffer.Length);
+            stream.ReadExactly(buffer);
             if (File.Exists(outFile))
             {
                 File.Delete(outFile);
             }
 
-            using (FileStream fileStream = new FileStream(outFile, FileMode.Create))
+            using (FileStream fileStream = new(outFile, FileMode.Create))
             {
                 fileStream.Write(buffer, 0, buffer.Length);
             }
@@ -125,20 +126,20 @@ namespace LibWiiSharpCore
         /// <param name="outFile"></param>
         public void Decompress(string inFile, string outFile)
         {
-            Stream stream = null;
-            using (FileStream fileStream = new FileStream(inFile, FileMode.Open))
+            Stream stream;
+            using (FileStream fileStream = new(inFile, FileMode.Open))
             {
                 stream = PrivDecompress(fileStream);
             }
 
             byte[] buffer = new byte[stream.Length];
-            stream.Read(buffer, 0, buffer.Length);
+            stream.ReadExactly(buffer);
             if (File.Exists(outFile))
             {
                 File.Delete(outFile);
             }
 
-            using (FileStream fileStream = new FileStream(outFile, FileMode.Create))
+            using (FileStream fileStream = new(outFile, FileMode.Create))
             {
                 fileStream.Write(buffer, 0, buffer.Length);
             }
@@ -173,7 +174,7 @@ namespace LibWiiSharpCore
             Headers.HeaderType headerType = Headers.DetectHeader(inFile);
             byte[] buffer = new byte[8];
             inFile.Seek((long)headerType, SeekOrigin.Begin);
-            inFile.Read(buffer, 0, 8);
+            inFile.ReadExactly(buffer);
             if ((int)Shared.Swap(BitConverter.ToUInt32(buffer, 0)) != (int)lz77Magic)
             {
                 inFile.Dispose();
@@ -193,7 +194,7 @@ namespace LibWiiSharpCore
             int num3 = 4078;
             uint num4 = 7;
             int num5 = 7;
-            MemoryStream memoryStream = new MemoryStream();
+            MemoryStream memoryStream = new();
             label_10:
             while (true)
             {
@@ -276,7 +277,7 @@ namespace LibWiiSharpCore
             int num1 = 0;
             int[] numArray1 = new int[17];
             uint num2 = (uint)(((int)Convert.ToUInt32(inFile.Length) << 8) + 16);
-            MemoryStream memoryStream = new MemoryStream();
+            MemoryStream memoryStream = new();
             memoryStream.Write(BitConverter.GetBytes(Shared.Swap(lz77Magic)), 0, 4);
             memoryStream.Write(BitConverter.GetBytes(num2), 0, 4);
             this.InitTree();

@@ -18,15 +18,8 @@
 
 namespace LibWiiSharpCore
 {
-    public class MessageEventArgs : EventArgs
+    public class MessageEventArgs(string message) : EventArgs
     {
-        private readonly string message;
-
         public string Message => message;
-
-        public MessageEventArgs(string message)
-        {
-            this.message = message;
-        }
     }
 }

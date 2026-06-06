@@ -26,36 +26,33 @@ namespace LibWiiSharpCore
         Korean = 0x01,
     }
 
-    public class Ticket : IDisposable
+    public class Ticket
     {
         private byte newKeyIndex;
         private byte[] decryptedTitleKey = new byte[16];
         private bool fakeSign;
         private bool titleKeyChanged;
-        private byte[] newEncryptedTitleKey = new byte[0];
+        private byte[] newEncryptedTitleKey = [];
         private bool reDecrypt;
         private uint signatureExponent = 65537;
         private byte[] signature = new byte[256];
-        private byte[] padding = new byte[60];
-        private byte[] issuer = new byte[64];
-        private byte[] unknown = new byte[63];
+        private readonly byte[] padding = new byte[60];
+        private readonly byte[] issuer = new byte[64];
+        private readonly byte[] unknown = new byte[63];
         private byte[] encryptedTitleKey = new byte[16];
         private byte unknown2;
-        private ulong ticketId;
-        private uint consoleId;
         private ulong titleId;
         private ushort unknown3 = ushort.MaxValue;
         private ushort numOfDlc;
         private ulong unknown4;
         private byte padding2;
         private byte commonKeyIndex;
-        private byte[] unknown5 = new byte[48];
-        private byte[] unknown6 = new byte[32];
+        private readonly byte[] unknown5 = new byte[48];
+        private readonly byte[] unknown6 = new byte[32];
         private ushort padding3;
         private uint enableTimeLimit;
         private uint timeLimit;
-        private byte[] padding4 = new byte[88];
-        private bool isDisposed;
+        private readonly byte[] padding4 = new byte[88];
 
         public byte[] TitleKey
         {
@@ -74,17 +71,9 @@ namespace LibWiiSharpCore
             set => newKeyIndex = (byte)value;
         }
 
-        public ulong TicketID
-        {
-            get => ticketId;
-            set => ticketId = value;
-        }
+        public ulong TicketID { get; set; }
 
-        public uint ConsoleID
-        {
-            get => consoleId;
-            set => consoleId = value;
-        }
+        public uint ConsoleID { get; set; }
 
         public ulong TitleID
         {
@@ -115,33 +104,7 @@ namespace LibWiiSharpCore
 
         public bool TitleKeyChanged => titleKeyChanged;
 
-        public event EventHandler<MessageEventArgs> Debug;
-
-        ~Ticket() => Dispose(false);
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (disposing && !isDisposed)
-            {
-                decryptedTitleKey = null;
-                newEncryptedTitleKey = null;
-                signature = null;
-                padding = null;
-                issuer = null;
-                unknown = null;
-                encryptedTitleKey = null;
-                unknown5 = null;
-                unknown6 = null;
-                padding4 = null;
-            }
-            isDisposed = true;
-        }
+        public event EventHandler<MessageEventArgs>? Debug;
 
         public static Ticket Load(string pathToTicket)
         {
@@ -150,8 +113,8 @@ namespace LibWiiSharpCore
 
         public static Ticket Load(byte[] ticket)
         {
-            Ticket ticket1 = new Ticket();
-            MemoryStream memoryStream = new MemoryStream(ticket);
+            Ticket ticket1 = new();
+            MemoryStream memoryStream = new(ticket);
             try
             {
                 ticket1.PrivParseTicket(memoryStream);
@@ -167,7 +130,7 @@ namespace LibWiiSharpCore
 
         public static Ticket Load(Stream ticket)
         {
-            Ticket ticket1 = new Ticket();
+            Ticket ticket1 = new();
             ticket1.PrivParseTicket(ticket);
             return ticket1;
         }
@@ -179,7 +142,7 @@ namespace LibWiiSharpCore
 
         public void LoadFile(byte[] ticket)
         {
-            MemoryStream memoryStream = new MemoryStream(ticket);
+            MemoryStream memoryStream = new(ticket);
             try
             {
                 PrivParseTicket(memoryStream);
@@ -214,7 +177,7 @@ namespace LibWiiSharpCore
                 File.Delete(savePath);
             }
 
-            using FileStream fileStream = new FileStream(savePath, FileMode.Create);
+            using FileStream fileStream = new(savePath, FileMode.Create);
             PrivWriteToStream(fileStream);
         }
 
@@ -230,7 +193,7 @@ namespace LibWiiSharpCore
                 this.fakeSign = true;
             }
 
-            MemoryStream memoryStream = new MemoryStream();
+            MemoryStream memoryStream = new();
             try
             {
                 PrivWriteToStream(memoryStream);
@@ -255,7 +218,7 @@ namespace LibWiiSharpCore
                 this.fakeSign = true;
             }
 
-            MemoryStream memoryStream = new MemoryStream();
+            MemoryStream memoryStream = new();
             try
             {
                 PrivWriteToStream(memoryStream);
@@ -308,9 +271,7 @@ namespace LibWiiSharpCore
         public string GetUpperTitleID()
         {
             byte[] bytes = BitConverter.GetBytes(Shared.Swap((uint)titleId));
-            return new string(
-                new char[4] { (char)bytes[0], (char)bytes[1], (char)bytes[2], (char)bytes[3] }
-            );
+            return new string([(char)bytes[0], (char)bytes[1], (char)bytes[2], (char)bytes[3]]);
         }
 
         private void PrivWriteToStream(Stream writeStream)
@@ -331,7 +292,7 @@ namespace LibWiiSharpCore
                 FireDebug("   Clearing Signature...");
                 signature = new byte[256];
             }
-            MemoryStream memoryStream = new MemoryStream();
+            MemoryStream memoryStream = new();
             memoryStream.Seek(0L, SeekOrigin.Begin);
             FireDebug(
                 "   Writing Signature Exponent... (Offset: 0x{0})",
@@ -372,12 +333,12 @@ namespace LibWiiSharpCore
                 "   Writing Ticket ID... (Offset: 0x{0})",
                 (object)memoryStream.Position.ToString("x8").ToUpper()
             );
-            memoryStream.Write(BitConverter.GetBytes(Shared.Swap(ticketId)), 0, 8);
+            memoryStream.Write(BitConverter.GetBytes(Shared.Swap(TicketID)), 0, 8);
             FireDebug(
                 "   Writing Console ID... (Offset: 0x{0})",
                 (object)memoryStream.Position.ToString("x8").ToUpper()
             );
-            memoryStream.Write(BitConverter.GetBytes(Shared.Swap(consoleId)), 0, 4);
+            memoryStream.Write(BitConverter.GetBytes(Shared.Swap(ConsoleID)), 0, 4);
             FireDebug(
                 "   Writing Title ID... (Offset: 0x{0})",
                 (object)memoryStream.Position.ToString("x8").ToUpper()
@@ -477,33 +438,33 @@ namespace LibWiiSharpCore
                 "   Reading Signature Exponent... (Offset: 0x{0})",
                 (object)ticketFile.Position.ToString("x8").ToUpper()
             );
-            ticketFile.Read(buffer, 0, 4);
+            ticketFile.ReadExactly(buffer, 0, 4);
             signatureExponent = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
             FireDebug(
                 "   Reading Signature... (Offset: 0x{0})",
                 (object)ticketFile.Position.ToString("x8").ToUpper()
             );
-            ticketFile.Read(signature, 0, signature.Length);
+            ticketFile.ReadExactly(signature);
             FireDebug(
                 "   Reading Padding... (Offset: 0x{0})",
                 (object)ticketFile.Position.ToString("x8").ToUpper()
             );
-            ticketFile.Read(padding, 0, padding.Length);
+            ticketFile.ReadExactly(padding);
             FireDebug(
                 "   Reading Issuer... (Offset: 0x{0})",
                 (object)ticketFile.Position.ToString("x8").ToUpper()
             );
-            ticketFile.Read(issuer, 0, issuer.Length);
+            ticketFile.ReadExactly(issuer);
             FireDebug(
                 "   Reading Unknown... (Offset: 0x{0})",
                 (object)ticketFile.Position.ToString("x8").ToUpper()
             );
-            ticketFile.Read(unknown, 0, unknown.Length);
+            ticketFile.ReadExactly(unknown);
             FireDebug(
                 "   Reading Title Key... (Offset: 0x{0})",
                 (object)ticketFile.Position.ToString("x8").ToUpper()
             );
-            ticketFile.Read(encryptedTitleKey, 0, encryptedTitleKey.Length);
+            ticketFile.ReadExactly(encryptedTitleKey);
             FireDebug(
                 "   Reading Unknown2... (Offset: 0x{0})",
                 (object)ticketFile.Position.ToString("x8").ToUpper()
@@ -513,19 +474,19 @@ namespace LibWiiSharpCore
                 "   Reading Ticket ID.. (Offset: 0x{0})",
                 (object)ticketFile.Position.ToString("x8").ToUpper()
             );
-            ticketFile.Read(buffer, 0, 8);
-            ticketId = Shared.Swap(BitConverter.ToUInt64(buffer, 0));
+            ticketFile.ReadExactly(buffer, 0, 8);
+            TicketID = Shared.Swap(BitConverter.ToUInt64(buffer, 0));
             FireDebug(
                 "   Reading Console ID... (Offset: 0x{0})",
                 (object)ticketFile.Position.ToString("x8").ToUpper()
             );
-            ticketFile.Read(buffer, 0, 4);
-            consoleId = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
+            ticketFile.ReadExactly(buffer, 0, 4);
+            ConsoleID = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
             FireDebug(
                 "   Reading Title ID... (Offset: 0x{0})",
                 (object)ticketFile.Position.ToString("x8").ToUpper()
             );
-            ticketFile.Read(buffer, 0, 8);
+            ticketFile.ReadExactly(buffer, 0, 8);
             titleId = Shared.Swap(BitConverter.ToUInt64(buffer, 0));
             FireDebug(
                 "   Reading Unknown3... (Offset: 0x{0})",
@@ -535,14 +496,14 @@ namespace LibWiiSharpCore
                 "   Reading NumOfDLC... (Offset: 0x{0})",
                 (object)ticketFile.Position.ToString("x8").ToUpper()
             );
-            ticketFile.Read(buffer, 0, 4);
+            ticketFile.ReadExactly(buffer, 0, 4);
             unknown3 = Shared.Swap(BitConverter.ToUInt16(buffer, 0));
             numOfDlc = Shared.Swap(BitConverter.ToUInt16(buffer, 2));
             FireDebug(
                 "   Reading Unknown4... (Offset: 0x{0})",
                 (object)ticketFile.Position.ToString("x8").ToUpper()
             );
-            ticketFile.Read(buffer, 0, 8);
+            ticketFile.ReadExactly(buffer, 0, 8);
             unknown4 = Shared.Swap(BitConverter.ToUInt64(buffer, 0));
             FireDebug(
                 "   Reading Padding2... (Offset: 0x{0})",
@@ -559,17 +520,17 @@ namespace LibWiiSharpCore
                 "   Reading Unknown5... (Offset: 0x{0})",
                 (object)ticketFile.Position.ToString("x8").ToUpper()
             );
-            ticketFile.Read(unknown5, 0, unknown5.Length);
+            ticketFile.ReadExactly(unknown5);
             FireDebug(
                 "   Reading Unknown6... (Offset: 0x{0})",
                 (object)ticketFile.Position.ToString("x8").ToUpper()
             );
-            ticketFile.Read(unknown6, 0, unknown6.Length);
+            ticketFile.ReadExactly(unknown6);
             FireDebug(
                 "   Reading Padding3... (Offset: 0x{0})",
                 (object)ticketFile.Position.ToString("x8").ToUpper()
             );
-            ticketFile.Read(buffer, 0, 2);
+            ticketFile.ReadExactly(buffer, 0, 2);
             padding3 = Shared.Swap(BitConverter.ToUInt16(buffer, 0));
             FireDebug(
                 "   Reading Enable Time Limit... (Offset: 0x{0})",
@@ -579,14 +540,14 @@ namespace LibWiiSharpCore
                 "   Reading Time Limit... (Offset: 0x{0})",
                 (object)ticketFile.Position.ToString("x8").ToUpper()
             );
-            ticketFile.Read(buffer, 0, 8);
+            ticketFile.ReadExactly(buffer, 0, 8);
             enableTimeLimit = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
             timeLimit = Shared.Swap(BitConverter.ToUInt32(buffer, 4));
             FireDebug(
                 "   Reading Padding4... (Offset: 0x{0})",
                 (object)ticketFile.Position.ToString("x8").ToUpper()
             );
-            ticketFile.Read(padding4, 0, padding4.Length);
+            ticketFile.ReadExactly(padding4);
             FireDebug("   Decrypting Title Key...");
             PrivDecryptTitleKey();
             FireDebug(
@@ -606,29 +567,21 @@ namespace LibWiiSharpCore
                 commonKeyIndex == 1 ? CommonKey.GetKoreanKey() : CommonKey.GetStandardKey();
             byte[] bytes = BitConverter.GetBytes(Shared.Swap(titleId));
             Array.Resize<byte>(ref bytes, 16);
-#pragma warning disable SYSLIB0022 // Type or member is obsolete
-            RijndaelManaged rijndaelManaged = new RijndaelManaged
-            {
-                Mode = CipherMode.CBC,
-                Padding = PaddingMode.None,
-                KeySize = 128,
-                BlockSize = 128,
-                Key = numArray,
-                IV = bytes,
-            };
-#pragma warning restore SYSLIB0022 // Type or member is obsolete
-            ICryptoTransform decryptor = rijndaelManaged.CreateDecryptor();
-            MemoryStream memoryStream = new MemoryStream(encryptedTitleKey);
-            CryptoStream cryptoStream = new CryptoStream(
-                memoryStream,
-                decryptor,
-                CryptoStreamMode.Read
-            );
-            cryptoStream.Read(decryptedTitleKey, 0, decryptedTitleKey.Length);
+            Aes aes = Aes.Create();
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.None;
+            aes.KeySize = 128;
+            aes.BlockSize = 128;
+            aes.Key = numArray;
+            aes.IV = bytes;
+            ICryptoTransform decryptor = aes.CreateDecryptor();
+            MemoryStream memoryStream = new(encryptedTitleKey);
+            CryptoStream cryptoStream = new(memoryStream, decryptor, CryptoStreamMode.Read);
+            cryptoStream.ReadExactly(decryptedTitleKey);
             cryptoStream.Dispose();
             memoryStream.Dispose();
             decryptor.Dispose();
-            rijndaelManaged.Clear();
+            aes.Clear();
         }
 
         private void PrivEncryptTitleKey()
@@ -638,29 +591,21 @@ namespace LibWiiSharpCore
                 commonKeyIndex == 1 ? CommonKey.GetKoreanKey() : CommonKey.GetStandardKey();
             byte[] bytes = BitConverter.GetBytes(Shared.Swap(titleId));
             Array.Resize<byte>(ref bytes, 16);
-#pragma warning disable SYSLIB0022 // Type or member is obsolete
-            RijndaelManaged rijndaelManaged = new RijndaelManaged
-            {
-                Mode = CipherMode.CBC,
-                Padding = PaddingMode.None,
-                KeySize = 128,
-                BlockSize = 128,
-                Key = numArray,
-                IV = bytes,
-            };
-#pragma warning restore SYSLIB0022 // Type or member is obsolete
-            ICryptoTransform encryptor = rijndaelManaged.CreateEncryptor();
-            MemoryStream memoryStream = new MemoryStream(decryptedTitleKey);
-            CryptoStream cryptoStream = new CryptoStream(
-                memoryStream,
-                encryptor,
-                CryptoStreamMode.Read
-            );
-            cryptoStream.Read(encryptedTitleKey, 0, encryptedTitleKey.Length);
+            Aes aes = Aes.Create();
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.None;
+            aes.KeySize = 128;
+            aes.BlockSize = 128;
+            aes.Key = numArray;
+            aes.IV = bytes;
+            ICryptoTransform encryptor = aes.CreateEncryptor();
+            MemoryStream memoryStream = new(decryptedTitleKey);
+            CryptoStream cryptoStream = new(memoryStream, encryptor, CryptoStreamMode.Read);
+            cryptoStream.ReadExactly(encryptedTitleKey);
             cryptoStream.Dispose();
             memoryStream.Dispose();
             encryptor.Dispose();
-            rijndaelManaged.Clear();
+            aes.Clear();
         }
 
         private void PrivReDecryptTitleKey()
@@ -671,7 +616,7 @@ namespace LibWiiSharpCore
 
         private void FireDebug(string debugMessage, params object[] args)
         {
-            EventHandler<MessageEventArgs> debug = Debug;
+            EventHandler<MessageEventArgs>? debug = Debug;
             if (debug == null)
             {
                 return;

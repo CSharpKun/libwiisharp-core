@@ -31,14 +31,8 @@ namespace LibWiiSharpCore
         All,
     }
 
-    public class NusClient : IDisposable
+    public sealed class NusClient(HttpClient nusClient)
     {
-#pragma warning disable SYSLIB0014 // Type or member is obsolete
-        private readonly WebClient wcNus = new WebClient();
-#pragma warning restore SYSLIB0014 // Type or member is obsolete
-        private bool useLocalFiles;
-        private bool continueWithoutTicket;
-        private bool isDisposed;
         private volatile bool isStopRequired;
 
         public void IsStopRequired(bool isStopRequired) => this.isStopRequired = isStopRequired;
@@ -46,40 +40,12 @@ namespace LibWiiSharpCore
         /// <summary>
         /// If true, existing local files will be used.
         /// </summary>
-        public bool UseLocalFiles
-        {
-            get => useLocalFiles;
-            set => useLocalFiles = value;
-        }
+        public bool UseLocalFiles { get; set; }
 
         /// <summary>
         /// If true, the download will be continued even if no ticket for the title is avaiable (WAD packaging and decryption are disabled).
         /// </summary>
-        public bool ContinueWithoutTicket
-        {
-            get => continueWithoutTicket;
-            set => continueWithoutTicket = value;
-        }
-
-        #region IDisposable Members
-        ~NusClient() => Dispose(false);
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (disposing && !isDisposed)
-            {
-                wcNus.Dispose();
-            }
-
-            isDisposed = true;
-        }
-        #endregion
+        public bool ContinueWithoutTicket { get; set; }
 
         #region Public Functions
         /// <summary>
@@ -90,7 +56,7 @@ namespace LibWiiSharpCore
         /// <param name="titleVersion"></param>
         /// <param name="outputDir"></param>
         /// <param name="storeTypes"></param>
-        public void DownloadTitle(
+        public async Task DownloadTitle(
             string titleId,
             string titleVersion,
             string outputDir,
@@ -104,7 +70,7 @@ namespace LibWiiSharpCore
                 throw new Exception("Title ID must be 16 characters long!");
             }
 
-            PrivDownloadTitle(titleId, titleVersion, outputDir, storeTypes);
+            await PrivDownloadTitle(titleId, titleVersion, outputDir, storeTypes);
         }
 
         /// <summary>
@@ -142,12 +108,12 @@ namespace LibWiiSharpCore
         /// <param name="titleId"></param>
         /// <param name="titleVersion"></param>
         /// <returns></returns>
-        public TMD DownloadTMD(string titleId, string titleVersion)
+        public async Task<TMD?> DownloadTMD(string titleId, string titleVersion)
         {
             if (isStopRequired)
                 return null;
             return titleId.Length == 16
-                ? PrivDownloadTmd(titleId, titleVersion)
+                ? await PrivDownloadTmd(titleId, titleVersion)
                 : throw new Exception("Title ID must be 16 characters long!");
         }
 
@@ -160,12 +126,12 @@ namespace LibWiiSharpCore
         /// <param name="titleVersion"></param>
         /// <param name="nusUrl"></param>
         /// <returns></returns>
-        public TMD DownloadTMD(string titleId, string titleVersion, string nusUrl)
+        public async Task<TMD?> DownloadTMD(string titleId, string titleVersion, string nusUrl)
         {
             if (isStopRequired)
                 return null;
             return titleId.Length == 16
-                ? PrivDownloadTmd(titleId, titleVersion, nusUrl)
+                ? await PrivDownloadTmd(titleId, titleVersion, nusUrl)
                 : throw new Exception("Title ID must be 16 characters long!");
         }
 
@@ -174,12 +140,12 @@ namespace LibWiiSharpCore
         /// </summary>
         /// <param name="titleId"></param>
         /// <returns></returns>
-        public Ticket DownloadTicket(string titleId)
+        public async Task<Ticket?> DownloadTicket(string titleId)
         {
             if (isStopRequired)
                 return null;
             return titleId.Length == 16
-                ? PrivDownloadTicket(titleId)
+                ? await PrivDownloadTicket(titleId)
                 : throw new Exception("Title ID must be 16 characters long!");
         }
 
@@ -190,12 +156,12 @@ namespace LibWiiSharpCore
         /// <param name="titleId"></param>
         /// <param name="nusUrl"></param>
         /// <returns></returns>
-        public Ticket DownloadTicket(string titleId, string nusUrl)
+        public async Task<Ticket?> DownloadTicket(string titleId, string nusUrl)
         {
             if (isStopRequired)
                 return null;
             return titleId.Length == 16
-                ? PrivDownloadTicket(titleId, nusUrl)
+                ? await PrivDownloadTicket(titleId, nusUrl)
                 : throw new Exception("Title ID must be 16 characters long!");
         }
 
@@ -207,7 +173,11 @@ namespace LibWiiSharpCore
         /// <param name="titleVersion"></param>
         /// <param name="contentId"></param>
         /// <returns></returns>
-        public byte[] DownloadSingleContent(string titleId, string titleVersion, string contentId)
+        public async Task<byte[]?> DownloadSingleContent(
+            string titleId,
+            string titleVersion,
+            string contentId
+        )
         {
             if (isStopRequired)
                 return null;
@@ -216,7 +186,7 @@ namespace LibWiiSharpCore
                 throw new Exception("Title ID must be 16 characters long!");
             }
 
-            return PrivDownloadSingleContent(titleId, titleVersion, contentId);
+            return await PrivDownloadSingleContent(titleId, titleVersion, contentId);
         }
 
         /// <summary>
@@ -227,7 +197,7 @@ namespace LibWiiSharpCore
         /// <param name="titleVersion"></param>
         /// <param name="contentId"></param>
         /// <param name="savePath"></param>
-        public void DownloadSingleContent(
+        public async Task DownloadSingleContent(
             string titleId,
             string titleVersion,
             string contentId,
@@ -249,7 +219,9 @@ namespace LibWiiSharpCore
                 File.Delete(savePath);
             }
 
-            byte[] bytes = PrivDownloadSingleContent(titleId, titleVersion, contentId);
+            byte[] bytes =
+                await PrivDownloadSingleContent(titleId, titleVersion, contentId)
+                ?? throw new NullReferenceException();
             File.WriteAllBytes(savePath, bytes);
         }
 
@@ -263,7 +235,7 @@ namespace LibWiiSharpCore
         /// <param name="contentId"></param>
         /// <param name="savePath"></param>
         /// <param name="nusUrl"></param>
-        public void DownloadSingleContent(
+        public async Task DownloadSingleContent(
             string titleId,
             string titleVersion,
             string contentId,
@@ -286,13 +258,15 @@ namespace LibWiiSharpCore
                 File.Delete(savePath);
             }
 
-            byte[] bytes = PrivDownloadSingleContent(titleId, titleVersion, contentId, nusUrl);
+            byte[] bytes =
+                await PrivDownloadSingleContent(titleId, titleVersion, contentId, nusUrl)
+                ?? throw new NullReferenceException();
             File.WriteAllBytes(savePath, bytes);
         }
         #endregion
 
         #region Private Functions
-        private byte[] PrivDownloadSingleContent(
+        private async Task<byte[]?> PrivDownloadSingleContent(
             string titleId,
             string titleVersion,
             string contentId
@@ -307,7 +281,7 @@ namespace LibWiiSharpCore
                 string.IsNullOrEmpty(titleVersion) ? "[Latest]" : titleVersion
             );
             FireDebug("   Checking for Internet connection...");
-            string nusUrl = PrivNUSUp();
+            string nusUrl = await PrivNUSUp();
             FireProgress(0);
             string str1 =
                 "tmd" + (string.IsNullOrEmpty(titleVersion) ? string.Empty : "." + titleVersion);
@@ -320,7 +294,7 @@ namespace LibWiiSharpCore
                 return null;
             }
             FireDebug("   Downloading TMD...");
-            byte[] tmdFile = wcNus.DownloadData(str2 + str1);
+            byte[] tmdFile = await nusClient.GetByteArrayAsync(str2 + str1);
             FireDebug("   Parsing TMD...");
             TMD tmd = TMD.Load(tmdFile);
             FireProgress(20);
@@ -342,7 +316,7 @@ namespace LibWiiSharpCore
                 FireDebug("   Content ID {0} wasn't found in TMD...", (object)contentId);
                 throw new Exception("Content ID wasn't found in the TMD!");
             }
-            if (!File.Exists("cetk") && !continueWithoutTicket)
+            if (!File.Exists("cetk") && !ContinueWithoutTicket)
             {
                 if (isStopRequired)
                 {
@@ -352,7 +326,7 @@ namespace LibWiiSharpCore
                 FireDebug("   Downloading Ticket...");
                 try
                 {
-                    byte[] tikArray = wcNus.DownloadData(str2 + "cetk");
+                    byte[] tikArray = await nusClient.GetByteArrayAsync(str2 + "cetk");
                 }
                 catch (Exception ex)
                 {
@@ -374,17 +348,12 @@ namespace LibWiiSharpCore
                 "   Downloading Content... ({0} bytes)",
                 (object)tmd.Contents[contentIndex].Size
             );
-            byte[] content = wcNus.DownloadData(str2 + empty);
+            byte[] content = await nusClient.GetByteArrayAsync(str2 + empty);
             FireProgress(80);
             FireDebug("   Decrypting Content...");
             byte[] array = PrivDecryptContent(content, contentIndex, tik, tmd);
             Array.Resize<byte>(ref array, (int)tmd.Contents[contentIndex].Size);
-            if (
-                !Shared.CompareByteArrays(
-                    SHA1.Create().ComputeHash(array),
-                    tmd.Contents[contentIndex].Hash
-                )
-            )
+            if (!Shared.CompareByteArrays(SHA1.HashData(array), tmd.Contents[contentIndex].Hash))
             {
                 FireDebug("/!\\ /!\\ /!\\ Hashes do not match /!\\ /!\\ /!\\");
                 throw new Exception("Hashes do not match!");
@@ -399,7 +368,7 @@ namespace LibWiiSharpCore
             return array;
         }
 
-        private byte[] PrivDownloadSingleContent(
+        private async Task<byte[]?> PrivDownloadSingleContent(
             string titleId,
             string titleVersion,
             string contentId,
@@ -414,12 +383,6 @@ namespace LibWiiSharpCore
                 titleId,
                 string.IsNullOrEmpty(titleVersion) ? "[Latest]" : titleVersion
             );
-            FireDebug("   Checking for Internet connection...");
-            if (!PrivCheckInet())
-            {
-                FireDebug("   Connection not found...");
-                throw new Exception("You're not connected to the internet!");
-            }
             FireProgress(0);
             string str1 =
                 "tmd" + (string.IsNullOrEmpty(titleVersion) ? string.Empty : "." + titleVersion);
@@ -432,7 +395,7 @@ namespace LibWiiSharpCore
                 return null;
             }
             FireDebug("   Downloading TMD...");
-            byte[] tmdFile = wcNus.DownloadData(str2 + str1);
+            byte[] tmdFile = await nusClient.GetByteArrayAsync(str2 + str1);
             FireDebug("   Parsing TMD...");
             TMD tmd = TMD.Load(tmdFile);
             FireProgress(20);
@@ -454,7 +417,7 @@ namespace LibWiiSharpCore
                 FireDebug("   Content ID {0} wasn't found in TMD...", (object)contentId);
                 throw new Exception("Content ID wasn't found in the TMD!");
             }
-            if (!File.Exists("cetk") && !continueWithoutTicket)
+            if (!File.Exists("cetk") && !ContinueWithoutTicket)
             {
                 if (isStopRequired)
                 {
@@ -464,7 +427,7 @@ namespace LibWiiSharpCore
                 FireDebug("   Downloading Ticket...");
                 try
                 {
-                    byte[] tikArray = wcNus.DownloadData(str2 + "cetk");
+                    byte[] tikArray = await nusClient.GetByteArrayAsync(str2 + "cetk");
                 }
                 catch (Exception ex)
                 {
@@ -486,17 +449,12 @@ namespace LibWiiSharpCore
                 "   Downloading Content... ({0} bytes)",
                 (object)tmd.Contents[contentIndex].Size
             );
-            byte[] content = wcNus.DownloadData(str2 + empty);
+            byte[] content = await nusClient.GetByteArrayAsync(str2 + empty);
             FireProgress(80);
             FireDebug("   Decrypting Content...");
             byte[] array = PrivDecryptContent(content, contentIndex, tik, tmd);
             Array.Resize<byte>(ref array, (int)tmd.Contents[contentIndex].Size);
-            if (
-                !Shared.CompareByteArrays(
-                    SHA1.Create().ComputeHash(array),
-                    tmd.Contents[contentIndex].Hash
-                )
-            )
+            if (!Shared.CompareByteArrays(SHA1.HashData(array), tmd.Contents[contentIndex].Hash))
             {
                 FireDebug("/!\\ /!\\ /!\\ Hashes do not match /!\\ /!\\ /!\\");
                 throw new Exception("Hashes do not match!");
@@ -511,36 +469,30 @@ namespace LibWiiSharpCore
             return array;
         }
 
-        private Ticket PrivDownloadTicket(string titleId)
+        private async Task<Ticket> PrivDownloadTicket(string titleId)
         {
-            string nusUrl = PrivNUSUp();
+            string nusUrl = await PrivNUSUp();
 
             string titleUrl = string.Format("{0}{1}/", nusUrl, titleId);
-            byte[] tikArray = wcNus.DownloadData(titleUrl + "cetk");
+            byte[] tikArray = await nusClient.GetByteArrayAsync(titleUrl + "cetk");
 
             return Ticket.Load(tikArray);
         }
 
-        private Ticket PrivDownloadTicket(string titleId, string nusUrl)
+        private async Task<Ticket> PrivDownloadTicket(string titleId, string nusUrl)
         {
-            if (!PrivCheckInet())
-            {
-                FireDebug("   Connection not found...");
-                throw new Exception("You're not connected to the internet!");
-            }
-
             string titleUrl = string.Format("{0}{1}/", nusUrl, titleId);
-            byte[] tikArray = wcNus.DownloadData(titleUrl + "cetk");
+            byte[] tikArray = await nusClient.GetByteArrayAsync(titleUrl + "cetk");
 
             return Ticket.Load(tikArray);
         }
 
-        private TMD PrivDownloadTmd(string titleId, string titleVersion)
+        private async Task<TMD> PrivDownloadTmd(string titleId, string titleVersion)
         {
-            string nusUrl = PrivNUSUp();
+            string nusUrl = await PrivNUSUp();
 
             return TMD.Load(
-                wcNus.DownloadData(
+                await nusClient.GetByteArrayAsync(
                     string.Format("{0}{1}/", nusUrl, titleId)
                         + (
                             "tmd"
@@ -554,16 +506,10 @@ namespace LibWiiSharpCore
             );
         }
 
-        private TMD PrivDownloadTmd(string titleId, string titleVersion, string nusUrl)
+        private async Task<TMD> PrivDownloadTmd(string titleId, string titleVersion, string nusUrl)
         {
-            if (!PrivCheckInet())
-            {
-                FireDebug("   Connection not found...");
-                throw new Exception("You're not connected to the internet!");
-            }
-
             return TMD.Load(
-                wcNus.DownloadData(
+                await nusClient.GetByteArrayAsync(
                     string.Format("{0}{1}/", nusUrl, titleId)
                         + (
                             "tmd"
@@ -577,7 +523,7 @@ namespace LibWiiSharpCore
             );
         }
 
-        private void PrivDownloadTitle(
+        private async Task PrivDownloadTitle(
             string titleId,
             string titleVersion,
             string outputDir,
@@ -595,7 +541,7 @@ namespace LibWiiSharpCore
                 throw new Exception("You must at least define one store type!");
             }
             FireDebug("   Checking for Internet connection...");
-            string nusUrl = PrivNUSUp();
+            string nusUrl = await PrivNUSUp();
             string str1 = string.Format("{0}{1}/", nusUrl, titleId);
             bool flag1 = false;
             bool flag2 = false;
@@ -633,7 +579,7 @@ namespace LibWiiSharpCore
                 flag1 = true;
                 flag3 = false;
             }
-            if (outputDir[outputDir.Length - 1] != Path.DirectorySeparatorChar)
+            if (outputDir[^1] != Path.DirectorySeparatorChar)
             {
                 outputDir += Path.DirectorySeparatorChar.ToString();
             }
@@ -646,15 +592,16 @@ namespace LibWiiSharpCore
             string str2 =
                 "tmd" + (string.IsNullOrEmpty(titleVersion) ? string.Empty : "." + titleVersion);
             FireDebug("   Downloading TMD...");
-            try
-            {
-                wcNus.DownloadFile(str1 + str2, outputDir + str2);
-            }
-            catch (Exception ex)
-            {
-                FireDebug("   Downloading TMD Failed...");
-                throw new Exception("Downloading TMD Failed:\n" + ex.Message);
-            }
+
+            string filePath = Path.Combine(outputDir, str2);
+
+            using var response = await nusClient.GetAsync(str1 + str2);
+            response.EnsureSuccessStatusCode();
+
+            Directory.CreateDirectory(outputDir);
+
+            await using var fileStream = File.Create(filePath);
+            await response.Content.CopyToAsync(fileStream);
 
             if (!File.Exists(outputDir + "cetk"))
             {
@@ -669,7 +616,7 @@ namespace LibWiiSharpCore
                 }
                 catch (Exception ex)
                 {
-                    if (!continueWithoutTicket || !flag1)
+                    if (!ContinueWithoutTicket || !flag1)
                     {
                         FireDebug("   Downloading Ticket Failed...");
                         throw new Exception(
@@ -692,8 +639,8 @@ namespace LibWiiSharpCore
 
             FireDebug("    -> {0} Contents", (object)tmd.NumOfContents);
             FireDebug("   Parsing Ticket...");
-            Ticket tik = null;
-            if (!continueWithoutTicket)
+            Ticket? tik = null;
+            if (!ContinueWithoutTicket)
             {
                 tik = Ticket.Load(outputDir + "cetk");
             }
@@ -708,44 +655,40 @@ namespace LibWiiSharpCore
                     tmd.Contents[index1].Size
                 );
                 FireProgress((index1 + 1) * 60 / tmd.NumOfContents + 10);
-                if (useLocalFiles)
+                if (UseLocalFiles)
                 {
-                    string str3 = outputDir;
+                    string str8 = outputDir;
                     contentId = tmd.Contents[index1].ContentID;
-                    string str4 = contentId.ToString("x8");
-                    if (File.Exists(str3 + str4))
+                    string str9 = contentId.ToString("x8");
+                    if (File.Exists(str8 + str9))
                     {
                         FireDebug("   Using Local File, Skipping...");
                         continue;
                     }
                 }
-                try
-                {
-                    WebClient wcNus = this.wcNus;
-                    string str3 = str1;
-                    contentId = tmd.Contents[index1].ContentID;
-                    string str4 = contentId.ToString("x8");
-                    string address = str3 + str4;
-                    string str5 = outputDir;
-                    contentId = tmd.Contents[index1].ContentID;
-                    string str6 = contentId.ToString("x8");
-                    string fileName = str5 + str6;
-                    wcNus.DownloadFile(address, fileName);
-                    string[] strArray2 = strArray1;
-                    int index2 = index1;
-                    contentId = tmd.Contents[index1].ContentID;
-                    string str7 = contentId.ToString("x8");
-                    strArray2[index2] = str7;
-                }
-                catch (Exception ex)
-                {
-                    FireDebug(
-                        "   Downloading Content #{0} of {1} failed...",
-                        index1 + 1,
-                        tmd.NumOfContents
-                    );
-                    throw new Exception("Downloading Content Failed:\n" + ex.Message);
-                }
+
+                string str3 = str1;
+                contentId = tmd.Contents[index1].ContentID;
+                string str4 = contentId.ToString("x8");
+                string address = str3 + str4;
+                string str5 = outputDir;
+                contentId = tmd.Contents[index1].ContentID;
+                string str6 = contentId.ToString("x8");
+                string fileName = str5 + str6;
+
+                using var responseMessage = await nusClient.GetAsync(address);
+                response.EnsureSuccessStatusCode();
+
+                Directory.CreateDirectory(outputDir);
+
+                await using var file = File.Create(fileName);
+                await response.Content.CopyToAsync(file);
+
+                string[] strArray2 = strArray1;
+                int index2 = index1;
+                contentId = tmd.Contents[index1].ContentID;
+                string str7 = contentId.ToString("x8");
+                strArray2[index2] = str7;
             }
             if (flag2 | flag3)
             {
@@ -872,12 +815,6 @@ namespace LibWiiSharpCore
                 FireDebug("  No store types were defined...");
                 throw new Exception("You must at least define one store type!");
             }
-            FireDebug("   Checking for Internet connection...");
-            if (!PrivCheckInet())
-            {
-                FireDebug("   Connection not found...");
-                throw new Exception("You're not connected to the internet!");
-            }
             string str1 = string.Format("{0}{1}/", nusUrl, titleId);
             bool flag1 = false;
             bool flag2 = false;
@@ -915,7 +852,7 @@ namespace LibWiiSharpCore
                 flag1 = true;
                 flag3 = false;
             }
-            if (outputDir[outputDir.Length - 1] != Path.DirectorySeparatorChar)
+            if (outputDir[^1] != Path.DirectorySeparatorChar)
             {
                 outputDir += Path.DirectorySeparatorChar.ToString();
             }
@@ -951,7 +888,7 @@ namespace LibWiiSharpCore
                 }
                 catch (Exception ex)
                 {
-                    if (!continueWithoutTicket || !flag1)
+                    if (!ContinueWithoutTicket || !flag1)
                     {
                         FireDebug("   Downloading Ticket Failed...");
                         throw new Exception(
@@ -975,7 +912,7 @@ namespace LibWiiSharpCore
             FireDebug("    -> {0} Contents", (object)tmd.NumOfContents);
             FireDebug("   Parsing Ticket...");
             Ticket tik = null;
-            if (!continueWithoutTicket)
+            if (!ContinueWithoutTicket)
             {
                 tik = Ticket.Load(outputDir + "cetk");
             }
@@ -990,7 +927,7 @@ namespace LibWiiSharpCore
                     tmd.Contents[index1].Size
                 );
                 FireProgress((index1 + 1) * 60 / tmd.NumOfContents + 10);
-                if (useLocalFiles)
+                if (UseLocalFiles)
                 {
                     string str3 = outputDir;
                     contentId = tmd.Contents[index1].ContentID;
@@ -1003,7 +940,6 @@ namespace LibWiiSharpCore
                 }
                 try
                 {
-                    WebClient wcNus = this.wcNus;
                     string str3 = str1;
                     contentId = tmd.Contents[index1].ContentID;
                     string str4 = contentId.ToString("x8");
@@ -1136,7 +1072,12 @@ namespace LibWiiSharpCore
             FireProgress(100);
         }
 
-        private byte[] PrivDecryptContent(byte[] content, int contentIndex, Ticket tik, TMD tmd)
+        private static byte[] PrivDecryptContent(
+            byte[] content,
+            int contentIndex,
+            Ticket tik,
+            TMD tmd
+        )
         {
             Array.Resize<byte>(ref content, Shared.AddPadding(content.Length, 16));
             byte[] titleKey = tik.TitleKey;
@@ -1144,110 +1085,53 @@ namespace LibWiiSharpCore
             byte[] bytes = BitConverter.GetBytes(tmd.Contents[contentIndex].Index);
             numArray[0] = bytes[1];
             numArray[1] = bytes[0];
-#pragma warning disable SYSLIB0022 // Type or member is obsolete
-            RijndaelManaged rijndaelManaged = new RijndaelManaged
-            {
-                Mode = CipherMode.CBC,
-                Padding = PaddingMode.None,
-                KeySize = 128,
-                BlockSize = 128,
-                Key = titleKey,
-                IV = numArray,
-            };
-#pragma warning restore SYSLIB0022 // Type or member is obsolete
-            ICryptoTransform decryptor = rijndaelManaged.CreateDecryptor();
-            MemoryStream memoryStream = new MemoryStream(content);
-            CryptoStream cryptoStream = new CryptoStream(
-                memoryStream,
-                decryptor,
-                CryptoStreamMode.Read
-            );
+            Aes aes = Aes.Create();
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.None;
+            aes.KeySize = 128;
+            aes.BlockSize = 128;
+            aes.Key = titleKey;
+            aes.IV = numArray;
+            ICryptoTransform decryptor = aes.CreateDecryptor();
+            MemoryStream memoryStream = new(content);
+            CryptoStream cryptoStream = new(memoryStream, decryptor, CryptoStreamMode.Read);
             byte[] buffer = new byte[content.Length];
-            cryptoStream.Read(buffer, 0, buffer.Length);
+            cryptoStream.ReadExactly(buffer);
             cryptoStream.Dispose();
             memoryStream.Dispose();
             return buffer;
         }
 
-        private string PrivNUSUp()
+        private async Task<string> PrivNUSUp()
         {
-            if (!PrivCheckInet())
-            {
-                FireDebug("   Connection not found...");
-                throw new Exception("You're not connected to the internet!");
-            }
-
             const string WiiEndpoint = "http://nus.cdn.shop.wii.com/ccs/download/";
             const string WiiUEndpoint = "http://ccs.cdn.wup.shop.nintendo.net/ccs/download/";
             const string DSiEndpoint = "http://nus.cdn.t.shop.nintendowifi.net/ccs/download/";
             const string RC24Endpoint = "http://ccs.cdn.sho.rc24.xyz/ccs/download/";
 
             // Wii Endpoint
-            try
-            {
-                wcNus.DownloadData(WiiEndpoint);
-            }
-            catch (WebException e)
-            {
-                if (e.Message.Split('(')[1].Split(')')[0] == "401")
-                {
-                    return WiiEndpoint;
-                }
-            }
+
+            var response = await nusClient.GetAsync(WiiEndpoint);
+            if (response.StatusCode is HttpStatusCode.Unauthorized)
+                return WiiEndpoint;
 
             // WiiU Endpoint
-            try
-            {
-                wcNus.DownloadData(WiiUEndpoint);
-            }
-            catch (WebException e)
-            {
-                if (e.Message.Split('(')[1].Split(')')[0] == "401")
-                {
-                    return WiiUEndpoint;
-                }
-            }
+
+            response = await nusClient.GetAsync(WiiUEndpoint);
+            if (response.StatusCode is HttpStatusCode.Unauthorized)
+                return WiiUEndpoint;
 
             // DSi Endpoint
-            try
-            {
-                wcNus.DownloadData(DSiEndpoint);
-            }
-            catch (WebException e)
-            {
-                if (e.Message.Split('(')[1].Split(')')[0] == "401")
-                {
-                    return DSiEndpoint;
-                }
-            }
+            response = await nusClient.GetAsync(DSiEndpoint);
+            if (response.StatusCode is HttpStatusCode.Unauthorized)
+                return DSiEndpoint;
 
             // RC24 Endpoint
-            try
-            {
-                wcNus.DownloadData(RC24Endpoint);
-            }
-            catch (WebException e)
-            {
-                if (e.Message.Split('(')[1].Split(')')[0] == "401")
-                {
-                    return RC24Endpoint;
-                }
-            }
+            response = await nusClient.GetAsync(RC24Endpoint);
+            if (response.StatusCode is HttpStatusCode.Unauthorized)
+                return RC24Endpoint;
 
             throw new Exception("Unable to verify any online NUS server!");
-        }
-
-        private bool PrivCheckInet()
-        {
-            try
-            {
-                Dns.GetHostEntry("www.google.com");
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
         }
         #endregion
 

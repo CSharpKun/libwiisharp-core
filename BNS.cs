@@ -1,6 +1,7 @@
 ﻿/* This file is part of LibWiiSharpCore
  * Copyright (C) 2009 Leathl
  * Copyright (C) 2020 - 2022 TheShadowEevee, Github Contributors
+ * Copyright (C) 2026 CSharpKun
  *
  * LibWiiSharpCore is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as published
@@ -20,7 +21,7 @@ using System.ComponentModel;
 
 namespace LibWiiSharpCore;
 
-public class BNS : IDisposable
+public class BNS
 {
     private BNS_Header bnsHeader = new BNS_Header();
     private BNS_Info bnsInfo = new BNS_Info();
@@ -79,7 +80,6 @@ public class BNS : IDisposable
     private readonly bool loopFromWave;
     private bool converted;
     private bool toMono;
-    private bool isDisposed;
 
     /// <summary>
     /// 0x00 (0) = No Loop, 0x01 (1) = Loop
@@ -143,36 +143,6 @@ public class BNS : IDisposable
         this.waveFile = waveFile;
         this.loopFromWave = loopFromWave;
     }
-
-    #region IDisposable Members
-
-    ~BNS() => Dispose(false);
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (disposing && !isDisposed)
-        {
-            bnsHeader = null;
-            bnsInfo = null;
-            bnsData = null;
-            //this.lSamples = (int[,])null;
-            rlSamples = null;
-            tlSamples = null;
-            //this.hbcDefTbl = (int[])null;
-            pHist1 = null;
-            pHist2 = null;
-            waveFile = null;
-        }
-
-        isDisposed = true;
-    }
-    #endregion
 
     #region Public Functions
 

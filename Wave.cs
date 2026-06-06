@@ -1,6 +1,7 @@
 ﻿/* This file is part of LibWiiSharpCore
  * Copyright (C) 2009 Leathl
  * Copyright (C) 2020 - 2022 TheShadowEevee, Github Contributors
+ * Copyright (C) 2026 CSharpKun
  *
  * LibWiiSharpCore is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as published
@@ -18,16 +19,15 @@
 
 namespace LibWiiSharpCore
 {
-    public class Wave : IDisposable
+    public class Wave
     {
-        private WaveHeader header = new WaveHeader();
-        private WaveFmtChunk fmt = new WaveFmtChunk();
-        private WaveDataChunk data = new WaveDataChunk();
-        private WaveSmplChunk smpl = new WaveSmplChunk();
+        private readonly WaveHeader header = new();
+        private readonly WaveFmtChunk fmt = new();
+        private readonly WaveDataChunk data = new();
+        private readonly WaveSmplChunk smpl = new();
         private bool hasSmpl;
-        private bool isDisposed;
 
-        public int SampleRate => (int)fmt.SampleRate;
+        public int SampleRate => (int)(fmt.SampleRate);
 
         public int BitDepth => fmt.BitsPerSample;
 
@@ -37,19 +37,25 @@ namespace LibWiiSharpCore
 
         public int LoopStart => NumLoops == 0 ? 0 : (int)smpl.Loops[0].LoopStart;
 
-        public int NumSamples => (int)(data.DataSize / (fmt.BitsPerSample / 8) / fmt.NumChannels);
+        public int NumSamples =>
+            (int)((data.Data?.Length ?? 8) / (fmt.BitsPerSample / 8) / fmt.NumChannels);
 
         public int DataFormat => (int)fmt.AudioFormat;
 
-        public byte[] SampleData => data.Data;
+        public byte[]? SampleData => data?.Data;
 
         public int PlayLength =>
-            (int)(data.DataSize / fmt.NumChannels / (fmt.BitsPerSample / 8) / fmt.SampleRate);
+            (int)(
+                (data.Data?.Length ?? 8)
+                / fmt.NumChannels
+                / (fmt.BitsPerSample / 8)
+                / fmt.SampleRate
+            );
 
         public Wave(string pathToFile)
         {
-            using FileStream fileStream = new FileStream(pathToFile, FileMode.Open);
-            using BinaryReader reader = new BinaryReader(fileStream);
+            using FileStream fileStream = new(pathToFile, FileMode.Open);
+            using BinaryReader reader = new(fileStream);
             ParseWave(reader);
         }
 
@@ -60,8 +66,8 @@ namespace LibWiiSharpCore
 
         public Wave(byte[] waveFile)
         {
-            using MemoryStream memoryStream = new MemoryStream(waveFile);
-            using BinaryReader reader = new BinaryReader(memoryStream);
+            using MemoryStream memoryStream = new(waveFile);
+            using BinaryReader reader = new(memoryStream);
             ParseWave(reader);
         }
 
@@ -73,26 +79,6 @@ namespace LibWiiSharpCore
             data.Data = samples;
         }
 
-        ~Wave() => Dispose(false);
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (disposing && !isDisposed)
-            {
-                header = null;
-                fmt = null;
-                data = null;
-                smpl = null;
-            }
-            isDisposed = true;
-        }
-
         public void Write(Stream writeStream)
         {
             WriteToStream(new BinaryWriter(writeStream));
@@ -100,7 +86,7 @@ namespace LibWiiSharpCore
 
         public MemoryStream ToMemoryStream()
         {
-            MemoryStream memoryStream = new MemoryStream();
+            MemoryStream memoryStream = new();
             WriteToStream(new BinaryWriter(memoryStream));
             return memoryStream;
         }
@@ -112,8 +98,8 @@ namespace LibWiiSharpCore
 
         public void Save(string savePath)
         {
-            using FileStream fileStream = new FileStream(savePath, FileMode.Create);
-            using BinaryWriter writer = new BinaryWriter(fileStream);
+            using FileStream fileStream = new(savePath, FileMode.Create);
+            using BinaryWriter writer = new(fileStream);
             WriteToStream(writer);
         }
 
@@ -130,8 +116,10 @@ namespace LibWiiSharpCore
 
         public void TrimStart(int newStartSample)
         {
+            if (data.Data is null)
+                throw new NullReferenceException();
             int offset = fmt.NumChannels * (fmt.BitsPerSample / 8) * newStartSample;
-            MemoryStream memoryStream = new MemoryStream();
+            MemoryStream memoryStream = new();
             memoryStream.Write(data.Data, offset, data.Data.Length - offset);
             data.Data = memoryStream.ToArray();
             memoryStream.Dispose();
@@ -143,7 +131,7 @@ namespace LibWiiSharpCore
                 4
                 + (int)fmt.FmtSize
                 + 8
-                + (int)data.DataSize
+                + ((int?)data.Data?.Length ?? 8)
                 + 8
                 + (hasSmpl ? (int)smpl.SmplSize + 8 : 0)
             );
@@ -333,35 +321,24 @@ namespace LibWiiSharpCore
     internal class WaveDataChunk
     {
         private readonly uint dataId = 1684108385;
-        private uint dataSize = 8;
-        private byte[] data;
-
-        public uint DataSize => dataSize;
-
-        public byte[] Data
-        {
-            get => data;
-            set
-            {
-                data = value;
-                dataSize = (uint)data.Length;
-            }
-        }
+        public byte[]? Data { get; set; }
 
         public void Write(BinaryWriter writer)
         {
+            if (Data is null)
+                throw new NullReferenceException();
             writer.Write(Shared.Swap(dataId));
-            writer.Write(dataSize);
-            writer.Write(data, 0, data.Length);
+            writer.Write(Data.Length);
+            writer.Write(Data);
         }
 
         public void Read(BinaryReader reader)
         {
-            dataSize =
-                (int)Shared.Swap(reader.ReadUInt32()) == (int)dataId
+            var dataSize =
+                Shared.Swap(reader.ReadUInt32()) == dataId
                     ? reader.ReadUInt32()
                     : throw new Exception("Wrong chunk ID!");
-            data = reader.ReadBytes((int)dataSize);
+            Data = reader.ReadBytes((int)dataSize);
         }
     }
 
@@ -378,13 +355,13 @@ namespace LibWiiSharpCore
         private uint smpteOffset;
         private uint numLoops;
         private uint samplerData;
-        private readonly List<WaveSmplLoop> smplLoops = new List<WaveSmplLoop>();
+        private readonly List<WaveSmplLoop> smplLoops = [];
 
         public uint SmplSize => smplSize;
 
         public uint NumLoops => numLoops;
 
-        public WaveSmplLoop[] Loops => smplLoops.ToArray();
+        public WaveSmplLoop[] Loops => [.. smplLoops];
 
         public void AddLoop(int loopStartSample, int loopEndSample)
         {
@@ -441,7 +418,7 @@ namespace LibWiiSharpCore
             samplerData = reader.ReadUInt32();
             for (int index = 0; index < numLoops; ++index)
             {
-                WaveSmplLoop waveSmplLoop = new WaveSmplLoop();
+                WaveSmplLoop waveSmplLoop = new();
                 waveSmplLoop.Read(reader);
                 smplLoops.Add(waveSmplLoop);
             }

@@ -1,6 +1,7 @@
 ﻿/* This file is part of LibWiiSharpCore
  * Copyright (C) 2009 Leathl
  * Copyright (C) 2020 - 2022 TheShadowEevee, Github Contributors
+ * Copyright (C) 2026 CSharpKun
  *
  * LibWiiSharpCore is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as published
@@ -25,7 +26,7 @@ namespace LibWiiSharpCore
         //private const string certCaHash = "5B7D3EE28706AD8DA2CBD5A6B75C15D0F9B6F318";
         //private const string certCpHash = "6824D6DA4C25184F0D6DAF6EDB9C0FC57522A41C";
         //private const string certXsHash = "09787045037121477824BC6A3E5E076156573F8A";
-        private SHA1 sha = SHA1.Create();
+        private readonly SHA1 sha = SHA1.Create();
         private bool[] certsComplete = new bool[3];
         private byte[] certCa = new byte[1024];
         private byte[] certCp = new byte[768];
@@ -50,13 +51,12 @@ namespace LibWiiSharpCore
         {
             if (disposing && !isDisposed)
             {
-                sha.Clear();
-                sha = null;
-                certsComplete = null;
-                certCa = null;
-                certCp = null;
-                certXs = null;
+                certsComplete = null!;
+                certCa = null!;
+                certCp = null!;
+                certXs = null!;
             }
+            sha.Dispose();
             isDisposed = true;
         }
         #endregion
@@ -101,7 +101,7 @@ namespace LibWiiSharpCore
         /// <returns></returns>
         public static CertificateChain Load(Stream cert)
         {
-            CertificateChain certificateChain = new CertificateChain();
+            CertificateChain certificateChain = new();
             certificateChain.ParseCert(cert);
             return certificateChain;
         }
@@ -127,8 +127,8 @@ namespace LibWiiSharpCore
         /// <returns></returns>
         public static CertificateChain FromTikTmd(byte[] tikFile, byte[] tmdFile)
         {
-            CertificateChain certificateChain = new CertificateChain();
-            MemoryStream memoryStream1 = new MemoryStream(tikFile);
+            CertificateChain certificateChain = new();
+            MemoryStream memoryStream1 = new(tikFile);
             try
             {
                 certificateChain.GrabFromTik(memoryStream1);
@@ -138,7 +138,7 @@ namespace LibWiiSharpCore
                 memoryStream1.Dispose();
                 throw;
             }
-            MemoryStream memoryStream2 = new MemoryStream(tmdFile);
+            MemoryStream memoryStream2 = new(tmdFile);
             try
             {
                 certificateChain.GrabFromTmd(memoryStream2);
@@ -163,7 +163,7 @@ namespace LibWiiSharpCore
         /// <returns></returns>
         public static CertificateChain FromTikTmd(Stream tik, Stream tmd)
         {
-            CertificateChain certificateChain = new CertificateChain();
+            CertificateChain certificateChain = new();
             certificateChain.GrabFromTik(tik);
             certificateChain.GrabFromTmd(tmd);
             return certificateChain;
@@ -184,7 +184,7 @@ namespace LibWiiSharpCore
         /// <param name="certFile"></param>
         public void LoadFile(byte[] certFile)
         {
-            MemoryStream memoryStream = new MemoryStream(certFile);
+            MemoryStream memoryStream = new(certFile);
             try
             {
                 ParseCert(memoryStream);
@@ -226,7 +226,7 @@ namespace LibWiiSharpCore
         /// <param name="tmdFile"></param>
         public void LoadFromTikTmd(byte[] tikFile, byte[] tmdFile)
         {
-            MemoryStream memoryStream1 = new MemoryStream(tikFile);
+            MemoryStream memoryStream1 = new(tikFile);
             try
             {
                 GrabFromTik(memoryStream1);
@@ -236,7 +236,7 @@ namespace LibWiiSharpCore
                 memoryStream1.Dispose();
                 throw;
             }
-            MemoryStream memoryStream2 = new MemoryStream(tmdFile);
+            MemoryStream memoryStream2 = new(tmdFile);
             try
             {
                 GrabFromTmd(memoryStream2);
@@ -276,7 +276,7 @@ namespace LibWiiSharpCore
                 File.Delete(savePath);
             }
 
-            using FileStream fileStream = new FileStream(savePath, FileMode.Create);
+            using FileStream fileStream = new(savePath, FileMode.Create);
             WriteToStream(fileStream);
         }
 
@@ -286,7 +286,7 @@ namespace LibWiiSharpCore
         /// <returns></returns>
         public MemoryStream ToMemoryStream()
         {
-            MemoryStream memoryStream = new MemoryStream();
+            MemoryStream memoryStream = new();
             try
             {
                 WriteToStream(memoryStream);
@@ -305,7 +305,7 @@ namespace LibWiiSharpCore
         /// <returns></returns>
         public byte[] ToByteArray()
         {
-            MemoryStream memoryStream = new MemoryStream();
+            MemoryStream memoryStream = new();
             try
             {
                 WriteToStream(memoryStream);
@@ -360,7 +360,7 @@ namespace LibWiiSharpCore
                 {
                     certFile.Seek(num, SeekOrigin.Begin);
                     byte[] array = new byte[1024];
-                    certFile.Read(array, 0, array.Length);
+                    certFile.ReadExactly(array);
                     FireDebug("   Checking for Certificate CA...");
                     if (IsCertCa(array) && !certsComplete[1])
                     {
@@ -578,11 +578,11 @@ namespace LibWiiSharpCore
         /// <summary>
         /// Fires debugging messages. You may write them into a log file or log textbox.
         /// </summary>
-        public event EventHandler<MessageEventArgs> Debug;
+        public event EventHandler<MessageEventArgs>? Debug;
 
         private void FireDebug(string debugMessage, params object[] args)
         {
-            EventHandler<MessageEventArgs> debug = Debug;
+            EventHandler<MessageEventArgs>? debug = Debug;
             if (debug == null)
             {
                 return;

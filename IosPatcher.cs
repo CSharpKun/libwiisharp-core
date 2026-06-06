@@ -26,7 +26,7 @@ namespace LibWiiSharpCore
     /// </summary>
     public class IosPatcher
     {
-        private WAD wadFile;
+        private WAD wadFile = null!;
         private int esIndex = -1;
 
         #region Public Functions
@@ -116,8 +116,8 @@ namespace LibWiiSharpCore
         {
             FireDebug("Patching Fakesigning...");
             int num = 0;
-            byte[] second1 = new byte[4] { 32, 7, 35, 162 };
-            byte[] second2 = new byte[4] { 32, 7, 75, 11 };
+            byte[] second1 = [32, 7, 35, 162];
+            byte[] second2 = [32, 7, 75, 11];
             for (int firstIndex = 0; firstIndex < esModule.Length - 4; ++firstIndex)
             {
                 FireProgress((firstIndex + 1) * 100 / esModule.Length);
@@ -143,7 +143,7 @@ namespace LibWiiSharpCore
         {
             FireDebug("Patching ES_Identify...");
             int num = 0;
-            byte[] second = new byte[4] { 40, 3, 209, 35 };
+            byte[] second = [40, 3, 209, 35];
             for (int firstIndex = 0; firstIndex < esModule.Length - 4; ++firstIndex)
             {
                 FireProgress((firstIndex + 1) * 100 / esModule.Length);
@@ -167,7 +167,7 @@ namespace LibWiiSharpCore
         {
             FireDebug("Patching NAND Permissions...");
             int num = 0;
-            byte[] second = new byte[6] { 66, 139, 208, 1, 37, 102 };
+            byte[] second = [66, 139, 208, 1, 37, 102];
             for (int firstIndex = 0; firstIndex < esModule.Length - 6; ++firstIndex)
             {
                 FireProgress((firstIndex + 1) * 100 / esModule.Length);
@@ -190,7 +190,7 @@ namespace LibWiiSharpCore
         {
             FireDebug("Patching VP...");
             int num = 0;
-            byte[] second = new byte[4] { 210, 1, 78, 86 };
+            byte[] second = [210, 1, 78, 86];
             for (int firstIndex = 0; firstIndex < esModule.Length - 4; ++firstIndex)
             {
                 FireProgress((firstIndex + 1) * 100 / esModule.Length);
@@ -213,11 +213,11 @@ namespace LibWiiSharpCore
         {
             FireDebug("Patching Fakesigning, ES_Identify, NAND Permissions and VP ...");
             int num = 0;
-            byte[] second1 = new byte[4] { 32, 7, 35, 162 };
-            byte[] second2 = new byte[4] { 32, 7, 75, 11 };
-            byte[] second3 = new byte[4] { 40, 3, 209, 35 };
-            byte[] second4 = new byte[6] { 66, 139, 208, 1, 37, 102 };
-            byte[] second5 = new byte[4] { 210, 1, 78, 86 };
+            byte[] second1 = [32, 7, 35, 162];
+            byte[] second2 = [32, 7, 75, 11];
+            byte[] second3 = [40, 3, 209, 35];
+            byte[] second4 = [66, 139, 208, 1, 37, 102];
+            byte[] second5 = [210, 1, 78, 86];
             for (int firstIndex = 0; firstIndex < esModule.Length - 6; ++firstIndex)
             {
                 FireProgress((firstIndex + 1) * 100 / esModule.Length);
@@ -311,16 +311,16 @@ namespace LibWiiSharpCore
         /// <summary>
         /// Fires the Progress of various operations
         /// </summary>
-        public event EventHandler<ProgressChangedEventArgs> Progress;
+        public event EventHandler<ProgressChangedEventArgs>? Progress;
 
         /// <summary>
         /// Fires debugging messages. You may write them into a log file or log textbox.
         /// </summary>
-        public event EventHandler<MessageEventArgs> Debug;
+        public event EventHandler<MessageEventArgs>? Debug;
 
         private void FireDebug(string debugMessage, params object[] args)
         {
-            EventHandler<MessageEventArgs> debug = Debug;
+            EventHandler<MessageEventArgs>? debug = Debug;
             if (debug == null)
             {
                 return;
@@ -331,7 +331,7 @@ namespace LibWiiSharpCore
 
         private void FireProgress(int progressPercentage)
         {
-            EventHandler<ProgressChangedEventArgs> progress = Progress;
+            EventHandler<ProgressChangedEventArgs>? progress = Progress;
             if (progress == null)
             {
                 return;

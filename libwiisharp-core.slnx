@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/LibWiiSharpCore/LibWiiSharpCore.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LibWiiSharpCore.Tests/LibWiiSharpCore.Tests.csproj" />
+  </Folder>
+</Solution>

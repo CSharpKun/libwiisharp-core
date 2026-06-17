@@ -1,6 +1,7 @@
 ﻿/* This file is part of LibWiiSharpCore
  * Copyright (C) 2009 Leathl
  * Copyright (C) 2020 - 2022 TheShadowEevee, Github Contributors
+ * Copyright (C) 2026 CSharpKun
  *
  * LibWiiSharpCore is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as published

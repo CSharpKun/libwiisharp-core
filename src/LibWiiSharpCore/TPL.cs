@@ -22,8 +22,7 @@
 //Thanks to the authors!
 
 using System.Runtime.InteropServices;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using EchoStorm.ImageSharp;
 
 namespace LibWiiSharpCore;
 

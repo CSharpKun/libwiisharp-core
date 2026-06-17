@@ -18,11 +18,16 @@
  */
 
 using System.Security.Cryptography;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace LibWiiSharpCore
 {
-    public class CertificateChain : IDisposable
+    public class CertificateChain(ILogger<CertificateChain>? logger = null) : IDisposable
     {
+        private readonly ILogger<CertificateChain> _logger =
+            logger ?? NullLogger<CertificateChain>.Instance;
+
         //private const string certCaHash = "5B7D3EE28706AD8DA2CBD5A6B75C15D0F9B6F318";
         //private const string certCpHash = "6824D6DA4C25184F0D6DAF6EDB9C0FC57522A41C";
         //private const string certXsHash = "09787045037121477824BC6A3E5E076156573F8A";
@@ -324,68 +329,69 @@ namespace LibWiiSharpCore
         #region Private Functions
         private void WriteToStream(Stream writeStream)
         {
-            FireDebug("Writing Certificate Chain...");
+            _logger.LogDebug("Writing Certificate Chain...");
             if (!CertsComplete)
             {
-                FireDebug("   Certificate Chain incomplete...");
+                _logger.LogDebug("Certificate Chain incomplete...");
                 throw new Exception("At least one certificate is missing!");
             }
             writeStream.Seek(0L, SeekOrigin.Begin);
             object[] objArray1 = new object[1];
             long position = writeStream.Position;
             objArray1[0] = position.ToString("x8");
-            FireDebug("   Writing Certificate CA... (Offset: 0x{0})", objArray1);
+            _logger.LogDebug("Writing Certificate CA... (Offset: 0x{Array})", objArray1);
             writeStream.Write(certCa, 0, certCa.Length);
             object[] objArray2 = new object[1];
             position = writeStream.Position;
             objArray2[0] = position.ToString("x8");
-            FireDebug("   Writing Certificate CP... (Offset: 0x{0})", objArray2);
+            _logger.LogDebug("Writing Certificate CP... (Offset: 0x{Array})", objArray2);
             writeStream.Write(certCp, 0, certCp.Length);
             object[] objArray3 = new object[1];
             position = writeStream.Position;
             objArray3[0] = position.ToString("x8");
-            FireDebug("   Writing Certificate XS... (Offset: 0x{0})", objArray3);
+            _logger.LogDebug("Writing Certificate XS... (Offset: 0x{Array})", objArray3);
             writeStream.Write(certXs, 0, certXs.Length);
-            FireDebug("Writing Certificate Chain Finished...");
+            _logger.LogDebug("Writing Certificate Chain Finished...");
         }
 
         private void ParseCert(Stream certFile)
         {
-            FireDebug("Parsing Certificate Chain...");
+            _logger.LogDebug("Parsing Certificate Chain...");
             int num = 0;
             for (int index = 0; index < 3; ++index)
             {
-                FireDebug("   Scanning at Offset 0x{0}:", (object)num.ToString("x8"));
+                if (_logger.IsEnabled(LogLevel.Debug))
+                    _logger.LogDebug("Scanning at Offset 0x{Offset}:", num.ToString("x8"));
                 try
                 {
                     certFile.Seek(num, SeekOrigin.Begin);
                     byte[] array = new byte[1024];
                     certFile.ReadExactly(array);
-                    FireDebug("   Checking for Certificate CA...");
+                    _logger.LogDebug("Checking for Certificate CA...");
                     if (IsCertCa(array) && !certsComplete[1])
                     {
-                        FireDebug("   Certificate CA detected...");
+                        _logger.LogDebug("Certificate CA detected...");
                         certCa = array;
                         certsComplete[1] = true;
                         num += 1024;
                         continue;
                     }
-                    FireDebug("   Checking for Certificate CP...");
+                    _logger.LogDebug("Checking for Certificate CP...");
                     if (IsCertCp(array) && !certsComplete[2])
                     {
-                        FireDebug("   Certificate CP detected...");
+                        _logger.LogDebug("Certificate CP detected...");
                         Array.Resize<byte>(ref array, 768);
                         certCp = array;
                         certsComplete[2] = true;
                         num += 768;
                         continue;
                     }
-                    FireDebug("   Checking for Certificate XS...");
+                    _logger.LogDebug("Checking for Certificate XS...");
                     if (IsCertXs(array))
                     {
                         if (!certsComplete[0])
                         {
-                            FireDebug("   Certificate XS detected...");
+                            _logger.LogDebug("Certificate XS detected...");
                             Array.Resize<byte>(ref array, 768);
                             certXs = array;
                             certsComplete[0] = true;
@@ -396,55 +402,56 @@ namespace LibWiiSharpCore
                 }
                 catch (Exception ex)
                 {
-                    FireDebug("Error: {0}", (object)ex.Message);
+                    _logger.LogError(ex, "Exception while parsing certificates");
                 }
                 num += 768;
             }
             if (!CertsComplete)
             {
-                FireDebug("   Couldn't locate all Certificates...");
+                _logger.LogDebug("Couldn't locate all Certificates...");
                 throw new Exception("Couldn't locate all certs!");
             }
-            FireDebug("Parsing Certificate Chain Finished...");
+            _logger.LogDebug("Parsing Certificate Chain Finished...");
         }
 
         private void GrabFromTik(Stream tik)
         {
-            FireDebug("Scanning Ticket for Certificates...");
+            _logger.LogDebug("Scanning Ticket for Certificates...");
             int num = 676;
             for (int index = 0; index < 3; ++index)
             {
-                FireDebug("   Scanning at Offset 0x{0}:", (object)num.ToString("x8"));
+                if (_logger.IsEnabled(LogLevel.Debug))
+                    _logger.LogDebug("Scanning at Offset 0x{Offset}:", num.ToString("x8"));
                 try
                 {
                     tik.Seek(num, SeekOrigin.Begin);
                     byte[] array = new byte[1024];
                     tik.ReadExactly(array);
-                    FireDebug("   Checking for Certificate CA...");
+                    _logger.LogDebug("Checking for Certificate CA...");
                     if (IsCertCa(array) && !certsComplete[1])
                     {
-                        FireDebug("   Certificate CA detected...");
+                        _logger.LogDebug("Certificate CA detected...");
                         certCa = array;
                         certsComplete[1] = true;
                         num += 1024;
                         continue;
                     }
-                    FireDebug("   Checking for Certificate CP...");
+                    _logger.LogDebug("Checking for Certificate CP...");
                     if (IsCertCp(array) && !certsComplete[2])
                     {
-                        FireDebug("   Certificate CP detected...");
+                        _logger.LogDebug("Certificate CP detected...");
                         Array.Resize<byte>(ref array, 768);
                         certCp = array;
                         certsComplete[2] = true;
                         num += 768;
                         continue;
                     }
-                    FireDebug("   Checking for Certificate XS...");
+                    _logger.LogDebug("Checking for Certificate XS...");
                     if (IsCertXs(array))
                     {
                         if (!certsComplete[0])
                         {
-                            FireDebug("   Certificate XS detected...");
+                            _logger.LogDebug("Certificate XS detected...");
                             Array.Resize<byte>(ref array, 768);
                             certXs = array;
                             certsComplete[0] = true;
@@ -456,49 +463,50 @@ namespace LibWiiSharpCore
                 catch { }
                 num += 768;
             }
-            FireDebug("Scanning Ticket for Certificates Finished...");
+            _logger.LogDebug("Scanning Ticket for Certificates Finished...");
         }
 
         private void GrabFromTmd(Stream tmd)
         {
-            FireDebug("Scanning TMD for Certificates...");
+            _logger.LogDebug("Scanning TMD for Certificates...");
             byte[] buffer = new byte[2];
             tmd.Seek(478L, SeekOrigin.Begin);
             tmd.ReadExactly(buffer);
             int num = 484 + Shared.Swap(BitConverter.ToUInt16(buffer, 0)) * 36;
             for (int index = 0; index < 3; ++index)
             {
-                FireDebug("   Scanning at Offset 0x{0}:", (object)num.ToString("x8"));
+                if (_logger.IsEnabled(LogLevel.Debug))
+                    _logger.LogDebug("Scanning at Offset 0x{Offset}:", num.ToString("x8"));
                 try
                 {
                     tmd.Seek(num, SeekOrigin.Begin);
                     byte[] array = new byte[1024];
                     tmd.ReadExactly(array);
-                    FireDebug("   Checking for Certificate CA...");
+                    _logger.LogDebug("Checking for Certificate CA...");
                     if (IsCertCa(array) && !certsComplete[1])
                     {
-                        FireDebug("   Certificate CA detected...");
+                        _logger.LogDebug("Certificate CA detected...");
                         certCa = array;
                         certsComplete[1] = true;
                         num += 1024;
                         continue;
                     }
-                    FireDebug("   Checking for Certificate CP...");
+                    _logger.LogDebug("Checking for Certificate CP...");
                     if (IsCertCp(array) && !certsComplete[2])
                     {
-                        FireDebug("   Certificate CP detected...");
+                        _logger.LogDebug("Certificate CP detected...");
                         Array.Resize<byte>(ref array, 768);
                         certCp = array;
                         certsComplete[2] = true;
                         num += 768;
                         continue;
                     }
-                    FireDebug("   Checking for Certificate XS...");
+                    _logger.LogDebug("Checking for Certificate XS...");
                     if (IsCertXs(array))
                     {
                         if (!certsComplete[0])
                         {
-                            FireDebug("   Certificate XS detected...");
+                            _logger.LogDebug("Certificate XS detected...");
                             Array.Resize<byte>(ref array, 768);
                             certXs = array;
                             certsComplete[0] = true;
@@ -510,7 +518,7 @@ namespace LibWiiSharpCore
                 catch { }
                 num += 768;
             }
-            FireDebug("Scanning TMD for Certificates Finished...");
+            _logger.LogDebug("Scanning TMD for Certificates Finished...");
         }
 
         private bool IsCertXs(byte[] part)
@@ -571,24 +579,6 @@ namespace LibWiiSharpCore
                     sha.ComputeHash(part),
                     Shared.HexStringToByteArray("6824D6DA4C25184F0D6DAF6EDB9C0FC57522A41C")
                 );
-        }
-        #endregion
-
-        #region Events
-        /// <summary>
-        /// Fires debugging messages. You may write them into a log file or log textbox.
-        /// </summary>
-        public event EventHandler<MessageEventArgs>? Debug;
-
-        private void FireDebug(string debugMessage, params object[] args)
-        {
-            EventHandler<MessageEventArgs>? debug = Debug;
-            if (debug == null)
-            {
-                return;
-            }
-
-            debug(new object(), new MessageEventArgs(string.Format(debugMessage, args)));
         }
         #endregion
     }

@@ -118,7 +118,7 @@ public class BNS
         set => toMono = value;
     }
 
-    public event EventHandler<ProgressChangedEventArgs> Progress;
+    public event EventHandler<ProgressChangedEventArgs>? Progress;
 
     protected BNS() { }
 
@@ -234,7 +234,7 @@ public class BNS
 
     private void Convert(byte[] waveFile, bool loopFromWave)
     {
-        Wave wave = new Wave(waveFile);
+        Wave wave = new(waveFile);
         int numLoops = wave.NumLoops;
         int loopStart = wave.LoopStart;
         bnsInfo.ChannelCount = (byte)wave.NumChannels;
@@ -573,14 +573,10 @@ public class BNS
 
     public static Wave BnsToWave(byte[] bnsFile)
     {
-        BNS bns = new BNS();
-        byte[] samples = null;
-        using (MemoryStream memoryStream = new MemoryStream(bnsFile))
-        {
-            samples = bns.Read(memoryStream);
-        }
-
-        Wave wave = new Wave(bns.bnsInfo.ChannelCount, 16, bns.bnsInfo.SampleRate, samples);
+        BNS bns = new();
+        using MemoryStream memoryStream = new(bnsFile);
+        var samples = bns.Read(memoryStream);
+        Wave wave = new(bns.bnsInfo.ChannelCount, 16, bns.bnsInfo.SampleRate, samples);
         if (bns.bnsInfo.HasLoop == 1)
         {
             wave.AddLoop((int)bns.bnsInfo.LoopStart);

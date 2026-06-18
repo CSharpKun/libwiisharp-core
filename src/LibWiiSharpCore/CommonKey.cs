@@ -17,21 +17,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace LibWiiSharpCore
+namespace LibWiiSharpCore;
+
+public class CommonKey
 {
-    public class CommonKey
+    private static readonly string standardKey = "ebe42a225e8593e448d9c5457381aaf7";
+    private static readonly string koreanKey = "63b82bb4f4614e2e13f2fefbba4c9b7e";
+
+    public static byte[] GetStandardKey()
     {
-        private static readonly string standardKey = "ebe42a225e8593e448d9c5457381aaf7";
-        private static readonly string koreanKey = "63b82bb4f4614e2e13f2fefbba4c9b7e";
+        return Shared.HexStringToByteArray(standardKey);
+    }
 
-        public static byte[] GetStandardKey()
-        {
-            return Shared.HexStringToByteArray(standardKey);
-        }
-
-        public static byte[] GetKoreanKey()
-        {
-            return Shared.HexStringToByteArray(koreanKey);
-        }
+    public static byte[] GetKoreanKey()
+    {
+        return Shared.HexStringToByteArray(koreanKey);
     }
 }

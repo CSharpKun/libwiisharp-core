@@ -17,450 +17,449 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace LibWiiSharpCore
+namespace LibWiiSharpCore;
+
+public class Lz77
 {
-    public class Lz77
+    //private const int N = 4096;
+    //private const int F = 18;
+    //private const int threshold = 2;
+    private static readonly uint lz77Magic = 1280980791;
+    private readonly int[] leftSon = new int[4097];
+    private readonly int[] rightSon = new int[4353];
+    private readonly int[] dad = new int[4097];
+    private readonly ushort[] textBuffer = new ushort[4113];
+    private int matchPosition;
+    private int matchLength;
+
+    /// <summary>
+    /// Lz77 Magic.
+    /// </summary>
+    public static uint Lz77Magic => lz77Magic;
+
+    #region Public Functions
+    /// <summary>
+    /// Checks whether a file is Lz77 compressed or not.
+    /// </summary>
+    /// <param name="file"></param>
+    /// <returns></returns>
+    public static bool IsLz77Compressed(string file)
     {
-        //private const int N = 4096;
-        //private const int F = 18;
-        //private const int threshold = 2;
-        private static readonly uint lz77Magic = 1280980791;
-        private readonly int[] leftSon = new int[4097];
-        private readonly int[] rightSon = new int[4353];
-        private readonly int[] dad = new int[4097];
-        private readonly ushort[] textBuffer = new ushort[4113];
-        private int matchPosition;
-        private int matchLength;
+        return IsLz77Compressed(File.ReadAllBytes(file));
+    }
 
-        /// <summary>
-        /// Lz77 Magic.
-        /// </summary>
-        public static uint Lz77Magic => lz77Magic;
+    /// <summary>
+    /// Checks whether a file is Lz77 compressed or not.
+    /// </summary>
+    /// <param name="file"></param>
+    /// <returns></returns>
+    public static bool IsLz77Compressed(byte[] file)
+    {
+        Headers.HeaderType headerType = Headers.DetectHeader(file);
+        return (int)Shared.Swap(BitConverter.ToUInt32(file, (int)headerType)) == (int)lz77Magic;
+    }
 
-        #region Public Functions
-        /// <summary>
-        /// Checks whether a file is Lz77 compressed or not.
-        /// </summary>
-        /// <param name="file"></param>
-        /// <returns></returns>
-        public static bool IsLz77Compressed(string file)
+    /// <summary>
+    /// Checks whether a file is Lz77 compressed or not.
+    /// </summary>
+    /// <param name="file"></param>
+    /// <returns></returns>
+    public static bool IsLz77Compressed(Stream file)
+    {
+        Headers.HeaderType headerType = Headers.DetectHeader(file);
+        byte[] buffer = new byte[4];
+        file.Seek((long)headerType, SeekOrigin.Begin);
+        file.ReadExactly(buffer);
+        return (int)Shared.Swap(BitConverter.ToUInt32(buffer, 0)) == (int)lz77Magic;
+    }
+
+    /// <summary>
+    /// Compresses a file using the Lz77 algorithm.
+    /// </summary>
+    /// <param name="inFile"></param>
+    /// <param name="outFile"></param>
+    public void Compress(string inFile, string outFile)
+    {
+        Stream stream;
+        using (FileStream fileStream = new(inFile, FileMode.Open))
         {
-            return IsLz77Compressed(File.ReadAllBytes(file));
+            stream = PrivCompress(fileStream);
         }
 
-        /// <summary>
-        /// Checks whether a file is Lz77 compressed or not.
-        /// </summary>
-        /// <param name="file"></param>
-        /// <returns></returns>
-        public static bool IsLz77Compressed(byte[] file)
+        byte[] buffer = new byte[stream.Length];
+        stream.ReadExactly(buffer);
+        if (File.Exists(outFile))
         {
-            Headers.HeaderType headerType = Headers.DetectHeader(file);
-            return (int)Shared.Swap(BitConverter.ToUInt32(file, (int)headerType)) == (int)lz77Magic;
+            File.Delete(outFile);
         }
 
-        /// <summary>
-        /// Checks whether a file is Lz77 compressed or not.
-        /// </summary>
-        /// <param name="file"></param>
-        /// <returns></returns>
-        public static bool IsLz77Compressed(Stream file)
+        using (FileStream fileStream = new(outFile, FileMode.Create))
         {
-            Headers.HeaderType headerType = Headers.DetectHeader(file);
-            byte[] buffer = new byte[4];
-            file.Seek((long)headerType, SeekOrigin.Begin);
-            file.ReadExactly(buffer);
-            return (int)Shared.Swap(BitConverter.ToUInt32(buffer, 0)) == (int)lz77Magic;
+            fileStream.Write(buffer, 0, buffer.Length);
+        }
+    }
+
+    /// <summary>
+    /// Compresses the byte array using the Lz77 algorithm.
+    /// </summary>
+    /// <param name="file"></param>
+    /// <returns></returns>
+    public byte[] Compress(byte[] file)
+    {
+        return ((MemoryStream)PrivCompress(new MemoryStream(file))).ToArray();
+    }
+
+    /// <summary>
+    /// Compresses the stream using the Lz77 algorithm.
+    /// </summary>
+    /// <param name="file"></param>
+    /// <returns></returns>
+    public Stream Compress(Stream file)
+    {
+        return PrivCompress(file);
+    }
+
+    /// <summary>
+    /// Decompresses a file using the Lz77 algorithm.
+    /// </summary>
+    /// <param name="inFile"></param>
+    /// <param name="outFile"></param>
+    public void Decompress(string inFile, string outFile)
+    {
+        Stream stream;
+        using (FileStream fileStream = new(inFile, FileMode.Open))
+        {
+            stream = PrivDecompress(fileStream);
         }
 
-        /// <summary>
-        /// Compresses a file using the Lz77 algorithm.
-        /// </summary>
-        /// <param name="inFile"></param>
-        /// <param name="outFile"></param>
-        public void Compress(string inFile, string outFile)
+        byte[] buffer = new byte[stream.Length];
+        stream.ReadExactly(buffer);
+        if (File.Exists(outFile))
         {
-            Stream stream;
-            using (FileStream fileStream = new(inFile, FileMode.Open))
-            {
-                stream = PrivCompress(fileStream);
-            }
-
-            byte[] buffer = new byte[stream.Length];
-            stream.ReadExactly(buffer);
-            if (File.Exists(outFile))
-            {
-                File.Delete(outFile);
-            }
-
-            using (FileStream fileStream = new(outFile, FileMode.Create))
-            {
-                fileStream.Write(buffer, 0, buffer.Length);
-            }
+            File.Delete(outFile);
         }
 
-        /// <summary>
-        /// Compresses the byte array using the Lz77 algorithm.
-        /// </summary>
-        /// <param name="file"></param>
-        /// <returns></returns>
-        public byte[] Compress(byte[] file)
+        using (FileStream fileStream = new(outFile, FileMode.Create))
         {
-            return ((MemoryStream)PrivCompress(new MemoryStream(file))).ToArray();
+            fileStream.Write(buffer, 0, buffer.Length);
+        }
+    }
+
+    /// <summary>
+    /// Decompresses the byte array using the Lz77 algorithm.
+    /// </summary>
+    /// <param name="file"></param>
+    /// <returns></returns>
+    public byte[] Decompress(byte[] file)
+    {
+        return ((MemoryStream)PrivDecompress(new MemoryStream(file))).ToArray();
+    }
+
+    public Stream Decompress(Stream file)
+    {
+        return PrivDecompress(file);
+    }
+    #endregion
+
+    #region Private Functions
+    private Stream PrivDecompress(Stream inFile)
+    {
+        if (!IsLz77Compressed(inFile))
+        {
+            return inFile;
         }
 
-        /// <summary>
-        /// Compresses the stream using the Lz77 algorithm.
-        /// </summary>
-        /// <param name="file"></param>
-        /// <returns></returns>
-        public Stream Compress(Stream file)
+        inFile.Seek(0L, SeekOrigin.Begin);
+        uint num1 = 0;
+        Headers.HeaderType headerType = Headers.DetectHeader(inFile);
+        byte[] buffer = new byte[8];
+        inFile.Seek((long)headerType, SeekOrigin.Begin);
+        inFile.ReadExactly(buffer);
+        if ((int)Shared.Swap(BitConverter.ToUInt32(buffer, 0)) != (int)lz77Magic)
         {
-            return PrivCompress(file);
+            inFile.Dispose();
+            throw new Exception("Invaild Magic!");
+        }
+        if (buffer[4] != 16)
+        {
+            inFile.Dispose();
+            throw new Exception("Unsupported Compression Type!");
+        }
+        uint num2 = BitConverter.ToUInt32(buffer, 4) >> 8;
+        for (int index = 0; index < 4078; ++index)
+        {
+            textBuffer[index] = 223;
         }
 
-        /// <summary>
-        /// Decompresses a file using the Lz77 algorithm.
-        /// </summary>
-        /// <param name="inFile"></param>
-        /// <param name="outFile"></param>
-        public void Decompress(string inFile, string outFile)
+        int num3 = 4078;
+        uint num4 = 7;
+        int num5 = 7;
+        MemoryStream memoryStream = new();
+        label_10:
+        while (true)
         {
-            Stream stream;
-            using (FileStream fileStream = new(inFile, FileMode.Open))
+            num4 <<= 1;
+            ++num5;
+            if (num5 == 8)
             {
-                stream = PrivDecompress(fileStream);
-            }
-
-            byte[] buffer = new byte[stream.Length];
-            stream.ReadExactly(buffer);
-            if (File.Exists(outFile))
-            {
-                File.Delete(outFile);
-            }
-
-            using (FileStream fileStream = new(outFile, FileMode.Create))
-            {
-                fileStream.Write(buffer, 0, buffer.Length);
-            }
-        }
-
-        /// <summary>
-        /// Decompresses the byte array using the Lz77 algorithm.
-        /// </summary>
-        /// <param name="file"></param>
-        /// <returns></returns>
-        public byte[] Decompress(byte[] file)
-        {
-            return ((MemoryStream)PrivDecompress(new MemoryStream(file))).ToArray();
-        }
-
-        public Stream Decompress(Stream file)
-        {
-            return PrivDecompress(file);
-        }
-        #endregion
-
-        #region Private Functions
-        private Stream PrivDecompress(Stream inFile)
-        {
-            if (!IsLz77Compressed(inFile))
-            {
-                return inFile;
-            }
-
-            inFile.Seek(0L, SeekOrigin.Begin);
-            uint num1 = 0;
-            Headers.HeaderType headerType = Headers.DetectHeader(inFile);
-            byte[] buffer = new byte[8];
-            inFile.Seek((long)headerType, SeekOrigin.Begin);
-            inFile.ReadExactly(buffer);
-            if ((int)Shared.Swap(BitConverter.ToUInt32(buffer, 0)) != (int)lz77Magic)
-            {
-                inFile.Dispose();
-                throw new Exception("Invaild Magic!");
-            }
-            if (buffer[4] != 16)
-            {
-                inFile.Dispose();
-                throw new Exception("Unsupported Compression Type!");
-            }
-            uint num2 = BitConverter.ToUInt32(buffer, 4) >> 8;
-            for (int index = 0; index < 4078; ++index)
-            {
-                textBuffer[index] = 223;
-            }
-
-            int num3 = 4078;
-            uint num4 = 7;
-            int num5 = 7;
-            MemoryStream memoryStream = new();
-            label_10:
-            while (true)
-            {
-                num4 <<= 1;
-                ++num5;
-                if (num5 == 8)
+                int num6;
+                if ((num6 = inFile.ReadByte()) != -1)
                 {
-                    int num6;
-                    if ((num6 = inFile.ReadByte()) != -1)
-                    {
-                        num4 = (uint)num6;
-                        num5 = 0;
-                    }
-                    else
-                    {
-                        goto label_24;
-                    }
-                }
-                if (((int)num4 & 128) == 0)
-                {
-                    int num6;
-                    if ((num6 = inFile.ReadByte()) != inFile.Length - 1L)
-                    {
-                        if (num1 < num2)
-                        {
-                            memoryStream.WriteByte((byte)num6);
-                        }
-
-                        ushort[] textBuffer = this.textBuffer;
-                        int index = num3;
-                        int num7 = index + 1;
-                        int num8 = (byte)num6;
-                        textBuffer[index] = (ushort)num8;
-                        num3 = num7 & 4095;
-                        ++num1;
-                    }
-                    else
-                    {
-                        goto label_24;
-                    }
+                    num4 = (uint)num6;
+                    num5 = 0;
                 }
                 else
                 {
-                    break;
+                    goto label_24;
                 }
             }
-            int num9;
-            int num10;
-            if ((num9 = inFile.ReadByte()) != -1 && (num10 = inFile.ReadByte()) != -1)
+            if (((int)num4 & 128) == 0)
             {
-                int num6 = num10 | num9 << 8 & 3840;
-                int num7 = (num9 >> 4 & 15) + 2;
-                for (int index1 = 0; index1 <= num7; ++index1)
+                int num6;
+                if ((num6 = inFile.ReadByte()) != inFile.Length - 1L)
                 {
-                    int num8 = this.textBuffer[num3 - num6 - 1 & 4095];
                     if (num1 < num2)
                     {
-                        memoryStream.WriteByte((byte)num8);
+                        memoryStream.WriteByte((byte)num6);
                     }
 
                     ushort[] textBuffer = this.textBuffer;
-                    int index2 = num3;
-                    int num11 = index2 + 1;
-                    int num12 = (byte)num8;
-                    textBuffer[index2] = (ushort)num12;
-                    num3 = num11 & 4095;
+                    int index = num3;
+                    int num7 = index + 1;
+                    int num8 = (byte)num6;
+                    textBuffer[index] = (ushort)num8;
+                    num3 = num7 & 4095;
                     ++num1;
-                }
-                goto label_10;
-            }
-            label_24:
-            return memoryStream;
-        }
-
-        private Stream PrivCompress(Stream inFile)
-        {
-            if (IsLz77Compressed(inFile))
-                return inFile;
-            inFile.Seek(0L, SeekOrigin.Begin);
-            int num1 = 0;
-            int[] numArray1 = new int[17];
-            uint num2 = (uint)(((int)Convert.ToUInt32(inFile.Length) << 8) + 16);
-            MemoryStream memoryStream = new();
-            memoryStream.Write(BitConverter.GetBytes(Shared.Swap(lz77Magic)), 0, 4);
-            memoryStream.Write(BitConverter.GetBytes(num2), 0, 4);
-            this.InitTree();
-            numArray1[0] = 0;
-            int num3 = 1;
-            int num4 = 128;
-            int p = 0;
-            int r = 4078;
-            for (int index = p; index < r; ++index)
-                this.textBuffer[index] = ushort.MaxValue;
-            int num5;
-            int num6;
-            for (num5 = 0; num5 < 18 && (num6 = inFile.ReadByte()) != -1; ++num5)
-                this.textBuffer[r + num5] = (ushort)num6;
-            if (num5 == 0)
-                return inFile;
-            for (int index = 1; index <= 18; ++index)
-                this.InsertNode(r - index);
-            this.InsertNode(r);
-            do
-            {
-                if (this.matchLength > num5)
-                    this.matchLength = num5;
-                if (this.matchLength <= 2)
-                {
-                    this.matchLength = 1;
-                    numArray1[num3++] = this.textBuffer[r];
                 }
                 else
                 {
-                    numArray1[0] |= num4;
-                    int[] numArray2 = numArray1;
-                    int index1 = num3;
-                    int num7 = index1 + 1;
-                    int num8 =
-                        (ushort)(r - this.matchPosition - 1 >> 8 & 15) | this.matchLength - 3 << 4;
-                    numArray2[index1] = num8;
-                    int[] numArray3 = numArray1;
-                    int index2 = num7;
-                    num3 = index2 + 1;
-                    int num9 = (ushort)(r - this.matchPosition - 1 & byte.MaxValue);
-                    numArray3[index2] = num9;
+                    goto label_24;
                 }
-                if ((num4 >>= 1) == 0)
+            }
+            else
+            {
+                break;
+            }
+        }
+        int num9;
+        int num10;
+        if ((num9 = inFile.ReadByte()) != -1 && (num10 = inFile.ReadByte()) != -1)
+        {
+            int num6 = num10 | num9 << 8 & 3840;
+            int num7 = (num9 >> 4 & 15) + 2;
+            for (int index1 = 0; index1 <= num7; ++index1)
+            {
+                int num8 = this.textBuffer[num3 - num6 - 1 & 4095];
+                if (num1 < num2)
                 {
-                    for (int index = 0; index < num3; ++index)
-                        memoryStream.WriteByte((byte)numArray1[index]);
-                    num1 += num3;
-                    numArray1[0] = 0;
-                    num3 = 1;
-                    num4 = 128;
+                    memoryStream.WriteByte((byte)num8);
                 }
-                int matchLength = this.matchLength;
-                int num10;
-                int num11;
-                for (num10 = 0; num10 < matchLength && (num11 = inFile.ReadByte()) != -1; ++num10)
-                {
-                    this.DeleteNode(p);
-                    this.textBuffer[p] = (ushort)num11;
-                    if (p < 17)
-                        this.textBuffer[p + 4096] = (ushort)num11;
-                    p = p + 1 & 4095;
-                    r = r + 1 & 4095;
-                    this.InsertNode(r);
-                }
-                while (num10++ < matchLength)
-                {
-                    this.DeleteNode(p);
-                    p = p + 1 & 4095;
-                    r = r + 1 & 4095;
-                    if (--num5 != 0)
-                        this.InsertNode(r);
-                }
-            } while (num5 > 0);
-            if (num3 > 1)
+
+                ushort[] textBuffer = this.textBuffer;
+                int index2 = num3;
+                int num11 = index2 + 1;
+                int num12 = (byte)num8;
+                textBuffer[index2] = (ushort)num12;
+                num3 = num11 & 4095;
+                ++num1;
+            }
+            goto label_10;
+        }
+        label_24:
+        return memoryStream;
+    }
+
+    private Stream PrivCompress(Stream inFile)
+    {
+        if (IsLz77Compressed(inFile))
+            return inFile;
+        inFile.Seek(0L, SeekOrigin.Begin);
+        int num1 = 0;
+        int[] numArray1 = new int[17];
+        uint num2 = (uint)(((int)Convert.ToUInt32(inFile.Length) << 8) + 16);
+        MemoryStream memoryStream = new();
+        memoryStream.Write(BitConverter.GetBytes(Shared.Swap(lz77Magic)), 0, 4);
+        memoryStream.Write(BitConverter.GetBytes(num2), 0, 4);
+        this.InitTree();
+        numArray1[0] = 0;
+        int num3 = 1;
+        int num4 = 128;
+        int p = 0;
+        int r = 4078;
+        for (int index = p; index < r; ++index)
+            this.textBuffer[index] = ushort.MaxValue;
+        int num5;
+        int num6;
+        for (num5 = 0; num5 < 18 && (num6 = inFile.ReadByte()) != -1; ++num5)
+            this.textBuffer[r + num5] = (ushort)num6;
+        if (num5 == 0)
+            return inFile;
+        for (int index = 1; index <= 18; ++index)
+            this.InsertNode(r - index);
+        this.InsertNode(r);
+        do
+        {
+            if (this.matchLength > num5)
+                this.matchLength = num5;
+            if (this.matchLength <= 2)
+            {
+                this.matchLength = 1;
+                numArray1[num3++] = this.textBuffer[r];
+            }
+            else
+            {
+                numArray1[0] |= num4;
+                int[] numArray2 = numArray1;
+                int index1 = num3;
+                int num7 = index1 + 1;
+                int num8 =
+                    (ushort)(r - this.matchPosition - 1 >> 8 & 15) | this.matchLength - 3 << 4;
+                numArray2[index1] = num8;
+                int[] numArray3 = numArray1;
+                int index2 = num7;
+                num3 = index2 + 1;
+                int num9 = (ushort)(r - this.matchPosition - 1 & byte.MaxValue);
+                numArray3[index2] = num9;
+            }
+            if ((num4 >>= 1) == 0)
             {
                 for (int index = 0; index < num3; ++index)
                     memoryStream.WriteByte((byte)numArray1[index]);
                 num1 += num3;
+                numArray1[0] = 0;
+                num3 = 1;
+                num4 = 128;
             }
-            if (num1 % 4 != 0)
+            int matchLength = this.matchLength;
+            int num10;
+            int num11;
+            for (num10 = 0; num10 < matchLength && (num11 = inFile.ReadByte()) != -1; ++num10)
             {
-                for (int index = 0; index < 4 - num1 % 4; ++index)
-                    memoryStream.WriteByte(0);
+                this.DeleteNode(p);
+                this.textBuffer[p] = (ushort)num11;
+                if (p < 17)
+                    this.textBuffer[p + 4096] = (ushort)num11;
+                p = p + 1 & 4095;
+                r = r + 1 & 4095;
+                this.InsertNode(r);
             }
-            return memoryStream;
-        }
-
-        private void InitTree()
+            while (num10++ < matchLength)
+            {
+                this.DeleteNode(p);
+                p = p + 1 & 4095;
+                r = r + 1 & 4095;
+                if (--num5 != 0)
+                    this.InsertNode(r);
+            }
+        } while (num5 > 0);
+        if (num3 > 1)
         {
-            for (int index = 4097; index <= 4352; ++index)
-                this.rightSon[index] = 4096;
-            for (int index = 0; index < 4096; ++index)
-                this.dad[index] = 4096;
+            for (int index = 0; index < num3; ++index)
+                memoryStream.WriteByte((byte)numArray1[index]);
+            num1 += num3;
         }
-
-        private void InsertNode(int r)
+        if (num1 % 4 != 0)
         {
-            int num1 = 1;
-            int index = 4097 + (this.textBuffer[r] != ushort.MaxValue ? this.textBuffer[r] : 0);
-            this.rightSon[r] = this.leftSon[r] = 4096;
-            this.matchLength = 0;
-            int num2;
+            for (int index = 0; index < 4 - num1 % 4; ++index)
+                memoryStream.WriteByte(0);
+        }
+        return memoryStream;
+    }
+
+    private void InitTree()
+    {
+        for (int index = 4097; index <= 4352; ++index)
+            this.rightSon[index] = 4096;
+        for (int index = 0; index < 4096; ++index)
+            this.dad[index] = 4096;
+    }
+
+    private void InsertNode(int r)
+    {
+        int num1 = 1;
+        int index = 4097 + (this.textBuffer[r] != ushort.MaxValue ? this.textBuffer[r] : 0);
+        this.rightSon[r] = this.leftSon[r] = 4096;
+        this.matchLength = 0;
+        int num2;
+        do
+        {
             do
+            {
+                if (num1 >= 0)
+                {
+                    if (this.rightSon[index] == 4096)
+                    {
+                        this.rightSon[index] = r;
+                        this.dad[r] = index;
+                        return;
+                    }
+                    index = this.rightSon[index];
+                }
+                else
+                {
+                    if (this.leftSon[index] == 4096)
+                    {
+                        this.leftSon[index] = r;
+                        this.dad[r] = index;
+                        return;
+                    }
+                    index = this.leftSon[index];
+                }
+                num2 = 1;
+                while (
+                    num2 < 18
+                    && (num1 = this.textBuffer[r + num2] - this.textBuffer[index + num2]) == 0
+                )
+                    ++num2;
+            } while (num2 <= this.matchLength);
+            this.matchPosition = index;
+        } while ((this.matchLength = num2) < 18);
+        this.dad[r] = this.dad[index];
+        this.leftSon[r] = this.leftSon[index];
+        this.rightSon[r] = this.rightSon[index];
+        this.dad[this.leftSon[index]] = r;
+        this.dad[this.rightSon[index]] = r;
+        if (this.rightSon[this.dad[index]] == index)
+            this.rightSon[this.dad[index]] = r;
+        else
+            this.leftSon[this.dad[index]] = r;
+        this.dad[index] = 4096;
+    }
+
+    private void DeleteNode(int p)
+    {
+        if (this.dad[p] == 4096)
+            return;
+        int index;
+        if (this.rightSon[p] == 4096)
+            index = this.leftSon[p];
+        else if (this.leftSon[p] == 4096)
+        {
+            index = this.rightSon[p];
+        }
+        else
+        {
+            index = this.leftSon[p];
+            if (this.rightSon[index] != 4096)
             {
                 do
                 {
-                    if (num1 >= 0)
-                    {
-                        if (this.rightSon[index] == 4096)
-                        {
-                            this.rightSon[index] = r;
-                            this.dad[r] = index;
-                            return;
-                        }
-                        index = this.rightSon[index];
-                    }
-                    else
-                    {
-                        if (this.leftSon[index] == 4096)
-                        {
-                            this.leftSon[index] = r;
-                            this.dad[r] = index;
-                            return;
-                        }
-                        index = this.leftSon[index];
-                    }
-                    num2 = 1;
-                    while (
-                        num2 < 18
-                        && (num1 = this.textBuffer[r + num2] - this.textBuffer[index + num2]) == 0
-                    )
-                        ++num2;
-                } while (num2 <= this.matchLength);
-                this.matchPosition = index;
-            } while ((this.matchLength = num2) < 18);
-            this.dad[r] = this.dad[index];
-            this.leftSon[r] = this.leftSon[index];
-            this.rightSon[r] = this.rightSon[index];
-            this.dad[this.leftSon[index]] = r;
-            this.dad[this.rightSon[index]] = r;
-            if (this.rightSon[this.dad[index]] == index)
-                this.rightSon[this.dad[index]] = r;
-            else
-                this.leftSon[this.dad[index]] = r;
-            this.dad[index] = 4096;
-        }
-
-        private void DeleteNode(int p)
-        {
-            if (this.dad[p] == 4096)
-                return;
-            int index;
-            if (this.rightSon[p] == 4096)
-                index = this.leftSon[p];
-            else if (this.leftSon[p] == 4096)
-            {
-                index = this.rightSon[p];
+                    index = this.rightSon[index];
+                } while (this.rightSon[index] != 4096);
+                this.rightSon[this.dad[index]] = this.leftSon[index];
+                this.dad[this.leftSon[index]] = this.dad[index];
+                this.leftSon[index] = this.leftSon[p];
+                this.dad[this.leftSon[p]] = index;
             }
-            else
-            {
-                index = this.leftSon[p];
-                if (this.rightSon[index] != 4096)
-                {
-                    do
-                    {
-                        index = this.rightSon[index];
-                    } while (this.rightSon[index] != 4096);
-                    this.rightSon[this.dad[index]] = this.leftSon[index];
-                    this.dad[this.leftSon[index]] = this.dad[index];
-                    this.leftSon[index] = this.leftSon[p];
-                    this.dad[this.leftSon[p]] = index;
-                }
-                this.rightSon[index] = this.rightSon[p];
-                this.dad[this.rightSon[p]] = index;
-            }
-            this.dad[index] = this.dad[p];
-            if (this.rightSon[this.dad[p]] == p)
-                this.rightSon[this.dad[p]] = index;
-            else
-                this.leftSon[this.dad[p]] = index;
-            this.dad[p] = 4096;
+            this.rightSon[index] = this.rightSon[p];
+            this.dad[this.rightSon[p]] = index;
         }
-        #endregion
+        this.dad[index] = this.dad[p];
+        if (this.rightSon[this.dad[p]] == p)
+            this.rightSon[this.dad[p]] = index;
+        else
+            this.leftSon[this.dad[p]] = index;
+        this.dad[p] = 4096;
     }
+    #endregion
 }

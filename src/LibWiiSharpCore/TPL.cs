@@ -21,8 +21,11 @@
 //Zetsubou by SquidMan was also a reference.
 //Thanks to the authors!
 
-using System.Runtime.InteropServices;
-using EchoStorm.ImageSharp;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using SharpImage.Core;
+using SharpImage.Formats;
+using SharpImage.Image;
 
 namespace LibWiiSharpCore;
 
@@ -49,8 +52,10 @@ public enum TPL_PaletteFormat
     None = 255, // 0x000000FF
 }
 
-public sealed class TPL : IDisposable
+public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
 {
+    private ILogger<TPL> _logger = logger ?? NullLogger<TPL>.Instance;
+
     private TPL_Header tplHeader = new();
     private List<TPL_TextureEntry> tplTextureEntries = [];
     private List<TPL_TextureHeader> tplTextureHeaders = [];
@@ -61,10 +66,6 @@ public sealed class TPL : IDisposable
 
     public int NumOfTextures => (int)tplHeader.NumOfTextures;
 
-    public event EventHandler<MessageEventArgs> Debug;
-
-    ~TPL() => Dispose(false);
-
     public void Dispose()
     {
         Dispose(true);
@@ -73,20 +74,7 @@ public sealed class TPL : IDisposable
 
     private void Dispose(bool disposing)
     {
-        if (disposing && !isDisposed)
-        {
-            tplHeader = null;
-            tplTextureEntries.Clear();
-            tplTextureEntries = null;
-            tplTextureHeaders.Clear();
-            tplTextureHeaders = null;
-            tplPaletteHeaders.Clear();
-            tplPaletteHeaders = null;
-            textureData.Clear();
-            textureData = null;
-            paletteData.Clear();
-            paletteData = null;
-        }
+        if (disposing && !isDisposed) { }
         isDisposed = true;
     }
 
@@ -137,15 +125,11 @@ public sealed class TPL : IDisposable
         TPL_PaletteFormat paletteFormat = TPL_PaletteFormat.RGB5A3
     )
     {
-        return FromImages(
-            new string[1] { pathToImage },
-            new TPL_TextureFormat[1] { tplFormat },
-            new TPL_PaletteFormat[1] { paletteFormat }
-        );
+        return FromImages([pathToImage], [tplFormat], [paletteFormat]);
     }
 
     public static TPL FromImage(
-        Image<Argb32> img,
+        ImageFrame img,
         TPL_TextureFormat tplFormat,
         TPL_PaletteFormat paletteFormat = TPL_PaletteFormat.RGB5A3
     )
@@ -164,10 +148,10 @@ public sealed class TPL : IDisposable
             throw new Exception("You must specify a format for each image!");
         }
 
-        List<Image<Argb32>> imageList = [];
+        List<ImageFrame> imageList = [];
         foreach (string imagePath in imagePaths)
         {
-            imageList.Add(Image.Load<Argb32>(imagePath));
+            imageList.Add(LoadFromPath(imagePath));
         }
 
         TPL tpl = new();
@@ -176,7 +160,7 @@ public sealed class TPL : IDisposable
     }
 
     public static TPL FromImages(
-        Image<Argb32>[] images,
+        ImageFrame[] images,
         TPL_TextureFormat[] tplFormats,
         TPL_PaletteFormat[] paletteFormats
     )
@@ -228,15 +212,11 @@ public sealed class TPL : IDisposable
         TPL_PaletteFormat paletteFormat = TPL_PaletteFormat.RGB5A3
     )
     {
-        CreateFromImages(
-            new string[1] { pathToImage },
-            new TPL_TextureFormat[1] { tplFormat },
-            new TPL_PaletteFormat[1] { paletteFormat }
-        );
+        CreateFromImages([pathToImage], [tplFormat], [paletteFormat]);
     }
 
     public void CreateFromImage(
-        Image<Argb32> img,
+        ImageFrame img,
         TPL_TextureFormat tplFormat,
         TPL_PaletteFormat paletteFormat = TPL_PaletteFormat.RGB5A3
     )
@@ -255,17 +235,17 @@ public sealed class TPL : IDisposable
             throw new Exception("You must specify a format for each image!");
         }
 
-        List<Image<Argb32>> imageList = new List<Image<Argb32>>();
+        List<ImageFrame> imageList = [];
         foreach (string imagePath in imagePaths)
         {
-            imageList.Add(Image.Load<Argb32>(imagePath));
+            imageList.Add(LoadFromPath(imagePath));
         }
 
         PrivCreateFromImages([.. imageList], tplFormats, paletteFormats);
     }
 
     public void CreateFromImages(
-        Image<Argb32>[] images,
+        ImageFrame[] images,
         TPL_TextureFormat[] tplFormats,
         TPL_PaletteFormat[] paletteFormats
     )
@@ -285,22 +265,13 @@ public sealed class TPL : IDisposable
             File.Delete(savePath);
         }
 
-        FileStream fileStream = new FileStream(savePath, FileMode.Create);
-        try
-        {
-            WriteToStream(fileStream);
-        }
-        catch
-        {
-            fileStream.Dispose();
-            throw;
-        }
-        fileStream.Dispose();
+        using FileStream fileStream = new(savePath, FileMode.Create);
+        WriteToStream(fileStream);
     }
 
     public MemoryStream ToMemoryStream()
     {
-        MemoryStream memoryStream = new MemoryStream();
+        MemoryStream memoryStream = new();
         try
         {
             WriteToStream(memoryStream);
@@ -318,12 +289,12 @@ public sealed class TPL : IDisposable
         return ToMemoryStream().ToArray();
     }
 
-    public Image<Argb32> ExtractTexture()
+    public ImageFrame ExtractTexture()
     {
         return ExtractTexture(0);
     }
 
-    public Image<Argb32> ExtractTexture(int index)
+    public ImageFrame ExtractTexture(int index)
     {
         byte[] data = tplTextureHeaders[index].TextureFormat switch
         {
@@ -385,7 +356,7 @@ public sealed class TPL : IDisposable
                 tplTextureHeaders[index].TextureWidth,
                 tplTextureHeaders[index].TextureHeight
             ),
-            _ => throw new FormatException("Unsupported Texture Format!"),
+            _ => throw new NotSupportedException("Unsupported Texture Format!"),
         };
         return RgbaToImage(
             data,
@@ -406,38 +377,45 @@ public sealed class TPL : IDisposable
             File.Delete(savePath);
         }
 
-        Image<Argb32> texture = ExtractTexture(index);
-        switch (Path.GetExtension(savePath).ToLower())
+        ImageFrame texture = ExtractTexture(index);
+        switch (Path.GetExtension(savePath).ToLowerInvariant())
         {
             case ".tif":
             case ".tiff":
-                texture.SaveAsTiff(savePath);
+                TiffCoder.Write(texture, savePath);
                 break;
+
             case ".bmp":
-                texture.SaveAsBmp(savePath);
+                BmpCoder.Write(texture, savePath);
                 break;
+
             case ".gif":
-                texture.SaveAsGif(savePath);
+                GifCoder.Write(texture, savePath);
                 break;
+
             case ".jpg":
             case ".jpeg":
-                texture.SaveAsJpeg(savePath);
+                JpegCoder.Write(texture, savePath);
                 break;
+
+            case ".png":
+                PngCoder.Write(texture, savePath);
+                break;
+
             default:
-                texture.SaveAsPng(savePath);
-                break;
+                throw new NotSupportedException("Not supported file extension");
         }
     }
 
-    public Image<Argb32>[] ExtractAllTextures()
+    public ImageFrame[] ExtractAllTextures()
     {
-        List<Image<Argb32>> imageList = new List<Image<Argb32>>();
+        List<ImageFrame> imageList = [];
         for (int index = 0; index < tplHeader.NumOfTextures; ++index)
         {
             imageList.Add(ExtractTexture(index));
         }
 
-        return imageList.ToArray();
+        return [.. imageList];
     }
 
     public void ExtractAllTextures(string saveDir)
@@ -466,22 +444,22 @@ public sealed class TPL : IDisposable
         TPL_PaletteFormat paletteFormat = TPL_PaletteFormat.RGB5A3
     )
     {
-        AddTexture(Image.Load<Argb32>(imagePath), tplFormat, paletteFormat);
+        AddTexture(LoadFromPath(imagePath), tplFormat, paletteFormat);
     }
 
     public void AddTexture(
-        Image<Argb32> img,
+        ImageFrame img,
         TPL_TextureFormat tplFormat,
         TPL_PaletteFormat paletteFormat = TPL_PaletteFormat.RGB5A3
     )
     {
-        TPL_TextureEntry tplTextureEntry = new TPL_TextureEntry();
-        TPL_TextureHeader tplTextureHeader = new TPL_TextureHeader();
-        TPL_PaletteHeader tplPaletteHeader = new TPL_PaletteHeader();
+        TPL_TextureEntry tplTextureEntry = new();
+        TPL_TextureHeader tplTextureHeader = new();
+        TPL_PaletteHeader tplPaletteHeader = new();
         byte[] numArray1 = ImageToTpl(img, tplFormat);
         byte[] numArray2 = [];
-        tplTextureHeader.TextureHeight = (ushort)img.Height;
-        tplTextureHeader.TextureWidth = (ushort)img.Width;
+        tplTextureHeader.TextureHeight = (ushort)img.Rows;
+        tplTextureHeader.TextureWidth = (ushort)img.Columns;
         tplTextureHeader.TextureFormat = (uint)tplFormat;
         if (
             tplFormat == TPL_TextureFormat.CI4
@@ -491,8 +469,8 @@ public sealed class TPL : IDisposable
         {
             ColorIndexConverter colorIndexConverter = new(
                 ImageToRgba(img),
-                img.Width,
-                img.Height,
+                img.Columns,
+                img.Rows,
                 tplFormat,
                 paletteFormat
             );
@@ -534,19 +512,34 @@ public sealed class TPL : IDisposable
         return (TPL_PaletteFormat)tplPaletteHeaders[index].PaletteFormat;
     }
 
-    public Size GetTextureSize(int index)
+    public System.Drawing.Size GetTextureSize(int index)
     {
-        return new Size(
+        return new System.Drawing.Size(
             tplTextureHeaders[index].TextureWidth,
             tplTextureHeaders[index].TextureHeight
         );
     }
 
+    private static ImageFrame LoadFromPath(string path) =>
+        path.ToLowerInvariant() switch
+        {
+            ".tif" or ".tiff" => TiffCoder.Read(path),
+
+            ".bmp" => BmpCoder.Read(path),
+            ".gif" => GifCoder.Read(path),
+
+            ".jpg" or ".jpeg" => JpegCoder.Read(path),
+
+            ".png" => PngCoder.Read(path),
+
+            _ => throw new NotSupportedException("Not supported file extension"),
+        };
+
     private void WriteToStream(Stream writeStream)
     {
-        FireDebug("Writing TPL...");
+        _logger.LogDebug("Writing TPL...");
         writeStream.Seek(0L, SeekOrigin.Begin);
-        FireDebug("   Writing TPL Header... (Offset: 0x{0})", writeStream.Position);
+        _logger.LogDebug("   Writing TPL Header... (Offset: 0x{0})", writeStream.Position);
         tplHeader.Write(writeStream);
         int position1 = (int)writeStream.Position;
         writeStream.Seek(tplHeader.NumOfTextures * 8U, SeekOrigin.Current);
@@ -572,7 +565,7 @@ public sealed class TPL : IDisposable
                 || tplTextureHeaders[index].TextureFormat == 10U
             )
             {
-                FireDebug(
+                _logger.LogDebug(
                     "   Writing Palette of Texture #{1}... (Offset: 0x{0})",
                     writeStream.Position,
                     index + 1
@@ -586,7 +579,7 @@ public sealed class TPL : IDisposable
         writeStream.Seek(tplHeader.NumOfTextures * 36U, SeekOrigin.Current);
         for (int index = 0; index < tplHeader.NumOfTextures; ++index)
         {
-            FireDebug(
+            _logger.LogDebug(
                 "   Writing Texture #{1} of {2}... (Offset: 0x{0})",
                 writeStream.Position,
                 index + 1,
@@ -610,7 +603,7 @@ public sealed class TPL : IDisposable
                 || tplTextureHeaders[index].TextureFormat == 10U
             )
             {
-                FireDebug(
+                _logger.LogDebug(
                     "   Writing Palette Header of Texture #{1}... (Offset: 0x{0})",
                     writeStream.Position,
                     index + 1
@@ -622,7 +615,7 @@ public sealed class TPL : IDisposable
         writeStream.Seek(position3, SeekOrigin.Begin);
         for (int index = 0; index < tplHeader.NumOfTextures; ++index)
         {
-            FireDebug(
+            _logger.LogDebug(
                 "   Writing Texture Header #{1} of {2}... (Offset: 0x{0})",
                 writeStream.Position,
                 index + 1,
@@ -634,7 +627,7 @@ public sealed class TPL : IDisposable
         writeStream.Seek(position1, SeekOrigin.Begin);
         for (int index = 0; index < tplHeader.NumOfTextures; ++index)
         {
-            FireDebug(
+            _logger.LogDebug(
                 "   Writing Texture Entry #{1} of {2}... (Offset: 0x{0})",
                 writeStream.Position,
                 index + 1,
@@ -642,110 +635,110 @@ public sealed class TPL : IDisposable
             );
             tplTextureEntries[index].Write(writeStream);
         }
-        FireDebug("Writing TPL Finished...");
+        _logger.LogDebug("Writing TPL Finished...");
     }
 
     private void ParseTpl(Stream tplFile)
     {
-        FireDebug("Parsing TPL...");
+        _logger.LogDebug("Parsing TPL...");
         tplHeader = new TPL_Header();
-        tplTextureEntries = new List<TPL_TextureEntry>();
-        tplTextureHeaders = new List<TPL_TextureHeader>();
-        tplPaletteHeaders = new List<TPL_PaletteHeader>();
-        textureData = new List<byte[]>();
-        paletteData = new List<byte[]>();
+        tplTextureEntries = [];
+        tplTextureHeaders = [];
+        tplPaletteHeaders = [];
+        textureData = [];
+        paletteData = [];
         tplFile.Seek(0L, SeekOrigin.Begin);
         byte[] buffer1 = new byte[4];
-        FireDebug("   Reading TPL Header: Magic... (Offset: 0x{0})", (object)tplFile.Position);
-        tplFile.Read(buffer1, 0, 4);
+        _logger.LogDebug("   Reading TPL Header: Magic... (Offset: 0x{0})", tplFile.Position);
+        tplFile.ReadExactly(buffer1);
         if ((int)Shared.Swap(BitConverter.ToUInt32(buffer1, 0)) != (int)tplHeader.TplMagic)
         {
-            FireDebug(
+            _logger.LogDebug(
                 "    -> Invalid Magic: 0x{0}",
-                (object)Shared.Swap(BitConverter.ToUInt32(buffer1, 0))
+                Shared.Swap(BitConverter.ToUInt32(buffer1, 0))
             );
             throw new Exception("TPL Header: Invalid Magic!");
         }
-        FireDebug(
+        _logger.LogDebug(
             "   Reading TPL Header: NumOfTextures... (Offset: 0x{0})",
-            (object)tplFile.Position
+            tplFile.Position
         );
-        tplFile.Read(buffer1, 0, 4);
+        tplFile.ReadExactly(buffer1);
         tplHeader.NumOfTextures = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
-        FireDebug("   Reading TPL Header: Headersize... (Offset: 0x{0})", (object)tplFile.Position);
-        tplFile.Read(buffer1, 0, 4);
+        _logger.LogDebug("   Reading TPL Header: Headersize... (Offset: 0x{0})", tplFile.Position);
+        tplFile.ReadExactly(buffer1);
         if ((int)Shared.Swap(BitConverter.ToUInt32(buffer1, 0)) != (int)tplHeader.HeaderSize)
         {
-            FireDebug(
+            _logger.LogDebug(
                 "    -> Invalid Headersize: 0x{0}",
-                (object)Shared.Swap(BitConverter.ToUInt32(buffer1, 0))
+                Shared.Swap(BitConverter.ToUInt32(buffer1, 0))
             );
             throw new Exception("TPL Header: Invalid Headersize!");
         }
         for (int index = 0; index < tplHeader.NumOfTextures; ++index)
         {
-            FireDebug(
+            _logger.LogDebug(
                 "   Reading Texture Entry #{1} of {2}... (Offset: 0x{0})",
                 tplFile.Position,
                 index + 1,
                 tplHeader.NumOfTextures
             );
-            TPL_TextureEntry tplTextureEntry = new TPL_TextureEntry();
-            tplFile.Read(buffer1, 0, 4);
+            TPL_TextureEntry tplTextureEntry = new();
+            tplFile.ReadExactly(buffer1);
             tplTextureEntry.TextureHeaderOffset = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
-            tplFile.Read(buffer1, 0, 4);
+            tplFile.ReadExactly(buffer1);
             tplTextureEntry.PaletteHeaderOffset = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
             tplTextureEntries.Add(tplTextureEntry);
         }
         for (int index = 0; index < tplHeader.NumOfTextures; ++index)
         {
-            FireDebug(
+            _logger.LogDebug(
                 "   Reading Texture Header #{1} of {2}... (Offset: 0x{0})",
                 tplFile.Position,
                 index + 1,
                 tplHeader.NumOfTextures
             );
-            TPL_TextureHeader tplTextureHeader = new TPL_TextureHeader();
-            TPL_PaletteHeader tplPaletteHeader = new TPL_PaletteHeader();
+            TPL_TextureHeader tplTextureHeader = new();
+            TPL_PaletteHeader tplPaletteHeader = new();
             tplFile.Seek(tplTextureEntries[index].TextureHeaderOffset, SeekOrigin.Begin);
-            tplFile.Read(buffer1, 0, 4);
+            tplFile.ReadExactly(buffer1);
             tplTextureHeader.TextureHeight = Shared.Swap(BitConverter.ToUInt16(buffer1, 0));
             tplTextureHeader.TextureWidth = Shared.Swap(BitConverter.ToUInt16(buffer1, 2));
-            tplFile.Read(buffer1, 0, 4);
+            tplFile.ReadExactly(buffer1);
             tplTextureHeader.TextureFormat = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
-            tplFile.Read(buffer1, 0, 4);
+            tplFile.ReadExactly(buffer1);
             tplTextureHeader.TextureDataOffset = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
-            tplFile.Read(buffer1, 0, 4);
+            tplFile.ReadExactly(buffer1);
             tplTextureHeader.WrapS = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
-            tplFile.Read(buffer1, 0, 4);
+            tplFile.ReadExactly(buffer1);
             tplTextureHeader.WrapT = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
-            tplFile.Read(buffer1, 0, 4);
+            tplFile.ReadExactly(buffer1);
             tplTextureHeader.MinFilter = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
-            tplFile.Read(buffer1, 0, 4);
+            tplFile.ReadExactly(buffer1);
             tplTextureHeader.MagFilter = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
-            tplFile.Read(buffer1, 0, 4);
+            tplFile.ReadExactly(buffer1);
             tplTextureHeader.LodBias = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
-            tplFile.Read(buffer1, 0, 4);
+            tplFile.ReadExactly(buffer1);
             tplTextureHeader.EdgeLod = buffer1[0];
             tplTextureHeader.MinLod = buffer1[1];
             tplTextureHeader.MaxLod = buffer1[2];
             tplTextureHeader.Unpacked = buffer1[3];
             if (tplTextureEntries[index].PaletteHeaderOffset != 0U)
             {
-                FireDebug(
+                _logger.LogDebug(
                     "   Reading Palette Header #{1} of {2}... (Offset: 0x{0})",
                     tplFile.Position,
                     index + 1,
                     tplHeader.NumOfTextures
                 );
                 tplFile.Seek(tplTextureEntries[index].PaletteHeaderOffset, SeekOrigin.Begin);
-                tplFile.Read(buffer1, 0, 4);
+                tplFile.ReadExactly(buffer1);
                 tplPaletteHeader.NumberOfItems = Shared.Swap(BitConverter.ToUInt16(buffer1, 0));
                 tplPaletteHeader.Unpacked = buffer1[2];
                 tplPaletteHeader.Pad = buffer1[3];
-                tplFile.Read(buffer1, 0, 4);
+                tplFile.ReadExactly(buffer1);
                 tplPaletteHeader.PaletteFormat = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
-                tplFile.Read(buffer1, 0, 4);
+                tplFile.ReadExactly(buffer1);
                 tplPaletteHeader.PaletteDataOffset = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
             }
             tplFile.Seek(tplTextureHeader.TextureDataOffset, SeekOrigin.Begin);
@@ -757,27 +750,27 @@ public sealed class TPL : IDisposable
                 )
             ];
             byte[] buffer3 = new byte[tplPaletteHeader.NumberOfItems * 2];
-            FireDebug(
+            _logger.LogDebug(
                 "   Reading Texture #{1} of {2}... (Offset: 0x{0})",
                 tplFile.Position,
                 index + 1,
                 tplHeader.NumOfTextures
             );
-            tplFile.Read(buffer2, 0, buffer2.Length);
+            tplFile.ReadExactly(buffer2);
             if (tplTextureEntries[index].PaletteHeaderOffset != 0U)
             {
-                FireDebug(
+                _logger.LogDebug(
                     "   Reading Palette #{1} of {2}... (Offset: 0x{0})",
                     tplFile.Position,
                     index + 1,
                     tplHeader.NumOfTextures
                 );
                 tplFile.Seek(tplPaletteHeader.PaletteDataOffset, SeekOrigin.Begin);
-                tplFile.Read(buffer3, 0, buffer3.Length);
+                tplFile.ReadExactly(buffer3);
             }
             else
             {
-                buffer3 = new byte[0];
+                buffer3 = [];
             }
 
             tplTextureHeaders.Add(tplTextureHeader);
@@ -787,7 +780,7 @@ public sealed class TPL : IDisposable
         }
     }
 
-    private int TextureByteSize(TPL_TextureFormat tplFormat, int width, int height)
+    private static int TextureByteSize(TPL_TextureFormat tplFormat, int width, int height)
     {
         return tplFormat switch
         {
@@ -810,28 +803,28 @@ public sealed class TPL : IDisposable
     }
 
     private void PrivCreateFromImages(
-        Image<Argb32>[] images,
+        ImageFrame[] images,
         TPL_TextureFormat[] tplFormats,
         TPL_PaletteFormat[] paletteFormats
     )
     {
         tplHeader = new TPL_Header();
-        tplTextureEntries = new List<TPL_TextureEntry>();
-        tplTextureHeaders = new List<TPL_TextureHeader>();
-        tplPaletteHeaders = new List<TPL_PaletteHeader>();
-        textureData = new List<byte[]>();
-        paletteData = new List<byte[]>();
+        tplTextureEntries = [];
+        tplTextureHeaders = [];
+        tplPaletteHeaders = [];
+        textureData = [];
+        paletteData = [];
         tplHeader.NumOfTextures = (uint)images.Length;
         for (int index = 0; index < images.Length; ++index)
         {
-            Image<Argb32> image = images[index];
-            TPL_TextureEntry tplTextureEntry = new TPL_TextureEntry();
-            TPL_TextureHeader tplTextureHeader = new TPL_TextureHeader();
-            TPL_PaletteHeader tplPaletteHeader = new TPL_PaletteHeader();
+            ImageFrame image = images[index];
+            TPL_TextureEntry tplTextureEntry = new();
+            TPL_TextureHeader tplTextureHeader = new();
+            TPL_PaletteHeader tplPaletteHeader = new();
             byte[] numArray1 = ImageToTpl(image, tplFormats[index]);
-            byte[] numArray2 = new byte[0];
-            tplTextureHeader.TextureHeight = (ushort)image.Height;
-            tplTextureHeader.TextureWidth = (ushort)image.Width;
+            byte[] numArray2 = [];
+            tplTextureHeader.TextureHeight = (ushort)image.Rows;
+            tplTextureHeader.TextureWidth = (ushort)image.Columns;
             tplTextureHeader.TextureFormat = (uint)tplFormats[index];
             if (
                 tplFormats[index] == TPL_TextureFormat.CI4
@@ -839,10 +832,10 @@ public sealed class TPL : IDisposable
                 || tplFormats[index] == TPL_TextureFormat.CI14X2
             )
             {
-                ColorIndexConverter colorIndexConverter = new ColorIndexConverter(
+                ColorIndexConverter colorIndexConverter = new(
                     ImageToRgba(image),
-                    image.Width,
-                    image.Height,
+                    image.Columns,
+                    image.Rows,
                     tplFormats[index],
                     paletteFormats[index]
                 );
@@ -859,7 +852,7 @@ public sealed class TPL : IDisposable
         }
     }
 
-    private byte[] ImageToTpl(Image<Argb32> img, TPL_TextureFormat tplFormat)
+    private byte[] ImageToTpl(ImageFrame img, TPL_TextureFormat tplFormat)
     {
         return tplFormat switch
         {
@@ -877,49 +870,105 @@ public sealed class TPL : IDisposable
         };
     }
 
-    private uint[] ImageToRgba(Image<Argb32> image)
+    private uint[] ImageToRgba(ImageFrame image)
     {
-        uint[] pixels = new uint[image.Width * image.Height];
+        int width = (int)image.Columns;
+        int height = (int)image.Rows;
+        uint[] pixels = new uint[width * height];
 
-        image.ProcessPixelRows(accessor =>
+        int redIndex = -1,
+            greenIndex = -1,
+            blueIndex = -1,
+            alphaIndex = -1;
+        for (int i = 0; i < image.ChannelMap.Length; i++)
         {
-            for (int y = 0; y < accessor.Height; y++)
+            var map = image.ChannelMap[i];
+            if (map.Traits.HasFlag(PixelTrait.Update))
             {
-                Span<Argb32> row = accessor.GetRowSpan(y);
-                for (int x = 0; x < row.Length; x++)
-                {
-                    Argb32 pixel = row[x];
-                    uint rgba = (uint)(
-                        (pixel.R << 24) | (pixel.G << 16) | (pixel.B << 8) | pixel.A
-                    );
-                    pixels[y * image.Width + x] = rgba;
-                }
+                if (redIndex == -1)
+                    redIndex = i;
+                else if (greenIndex == -1)
+                    greenIndex = i;
+                else if (blueIndex == -1)
+                    blueIndex = i;
             }
-        });
+            if (map.Channel == PixelChannel.Alpha)
+                alphaIndex = i;
+        }
+
+        for (int y = 0; y < height; y++)
+        {
+            ReadOnlySpan<ushort> row = image.GetPixelRow(y);
+            int rowOffset = y * width;
+
+            for (int x = 0; x < width; x++)
+            {
+                int pixelOffset = x * image.NumberOfChannels;
+
+                ushort r = row[pixelOffset + redIndex];
+                ushort g = row[pixelOffset + greenIndex];
+                ushort b = row[pixelOffset + blueIndex];
+                ushort a = alphaIndex >= 0 ? row[pixelOffset + alphaIndex] : ushort.MaxValue;
+
+                byte r8 = (byte)(r >> 8);
+                byte g8 = (byte)(g >> 8);
+                byte b8 = (byte)(b >> 8);
+                byte a8 = (byte)(a >> 8);
+
+                pixels[rowOffset + x] = (uint)((r8 << 24) | (g8 << 16) | (b8 << 8) | a8);
+            }
+        }
 
         return pixels;
     }
 
-    private Image<Argb32> RgbaToImage(byte[] data, int width, int height)
+    private ImageFrame RgbaToImage(byte[] data, int width, int height)
     {
-        var image = new Image<Argb32>(width, height);
+        var image = new ImageFrame();
+        image.Initialize(width, height, ColorspaceType.SRGB, true);
 
-        image.ProcessPixelRows(accessor =>
+        int redIndex = -1,
+            greenIndex = -1,
+            blueIndex = -1,
+            alphaIndex = -1;
+        for (int i = 0; i < image.ChannelMap.Length; i++)
         {
-            for (int y = 0; y < height; y++)
+            var map = image.ChannelMap[i];
+            if (map.Traits.HasFlag(PixelTrait.Update))
             {
-                Span<Argb32> row = accessor.GetRowSpan(y);
-                for (int x = 0; x < width; x++)
-                {
-                    int index = (y * width + x) * 4;
-                    byte r = data[index];
-                    byte g = data[index + 1];
-                    byte b = data[index + 2];
-                    byte a = data[index + 3];
-                    row[x] = new Argb32(r, g, b, a); // Argb32 ожидает R,G,B,A
-                }
+                if (redIndex == -1)
+                    redIndex = i;
+                else if (greenIndex == -1)
+                    greenIndex = i;
+                else if (blueIndex == -1)
+                    blueIndex = i;
             }
-        });
+            if (map.Channel == PixelChannel.Alpha)
+                alphaIndex = i;
+        }
+
+        for (int y = 0; y < height; y++)
+        {
+            Span<ushort> row = image.GetPixelRowForWrite(y);
+            int rowOffset = y * width;
+
+            for (int x = 0; x < width; x++)
+            {
+                int srcOffset = (rowOffset + x) * 4;
+                int dstOffset = x * image.NumberOfChannels;
+
+                byte r = data[srcOffset];
+                byte g = data[srcOffset + 1];
+                byte b = data[srcOffset + 2];
+                byte a = data[srcOffset + 3];
+
+                row[dstOffset + redIndex] = (ushort)(r << 8);
+                row[dstOffset + greenIndex] = (ushort)(g << 8);
+                row[dstOffset + blueIndex] = (ushort)(b << 8);
+                if (alphaIndex >= 0)
+                    row[dstOffset + alphaIndex] = (ushort)(a << 8);
+            }
+        }
 
         return image;
     }
@@ -934,11 +983,7 @@ public sealed class TPL : IDisposable
             if (index1 < numberOfItems)
             {
                 ushort uint16 = BitConverter.ToUInt16(
-                    new byte[2]
-                    {
-                        paletteData[index][index1 * 2 + 1],
-                        paletteData[index][index1 * 2],
-                    },
+                    [paletteData[index][index1 * 2 + 1], paletteData[index][index1 * 2]],
                     0
                 );
                 int num1;
@@ -995,7 +1040,7 @@ public sealed class TPL : IDisposable
         return num7 | num10;
     }
 
-    private byte[] FromRGBA8(byte[] tpl, int width, int height)
+    private byte[] FromRGBA8(byte[] tpl, long width, long height)
     {
         uint[] array = new uint[width * height];
         int num1 = 0;
@@ -1035,11 +1080,11 @@ public sealed class TPL : IDisposable
         return Shared.UIntArrayToByteArray(array);
     }
 
-    private byte[] ToRGBA8(Image<Argb32> img)
+    private byte[] ToRGBA8(ImageFrame img)
     {
         uint[] rgba = ImageToRgba(img);
-        int width = img.Width;
-        int height = img.Height;
+        var width = img.Columns;
+        long height = img.Rows;
         int index1 = 0;
         int num1 = 0;
         byte[] numArray1 = new byte[Shared.AddPadding(width, 4) * Shared.AddPadding(height, 4) * 4];
@@ -1101,7 +1146,7 @@ public sealed class TPL : IDisposable
         return numArray1;
     }
 
-    private static byte[] FromRGB5A3(byte[] tpl, int width, int height)
+    private static byte[] FromRGB5A3(byte[] tpl, long width, long height)
     {
         uint[] array = new uint[width * height];
         int num1 = 0;
@@ -1145,11 +1190,11 @@ public sealed class TPL : IDisposable
         return Shared.UIntArrayToByteArray(array);
     }
 
-    private byte[] ToRGB5A3(Image<Argb32> img)
+    private byte[] ToRGB5A3(ImageFrame img)
     {
         uint[] rgba = ImageToRgba(img);
-        int width = img.Width;
-        int height = img.Height;
+        long width = img.Columns;
+        long height = img.Rows;
         int num1 = -1;
         byte[] numArray = new byte[Shared.AddPadding(width, 4) * Shared.AddPadding(height, 4) * 2];
         for (int index1 = 0; index1 < height; index1 += 4)
@@ -1204,7 +1249,7 @@ public sealed class TPL : IDisposable
         return numArray;
     }
 
-    private static byte[] FromRGB565(byte[] tpl, int width, int height)
+    private static byte[] FromRGB565(byte[] tpl, long width, long height)
     {
         uint[] array = new uint[width * height];
         int num1 = 0;
@@ -1233,11 +1278,11 @@ public sealed class TPL : IDisposable
         return Shared.UIntArrayToByteArray(array);
     }
 
-    private byte[] ToRGB565(Image<Argb32> img)
+    private byte[] ToRGB565(ImageFrame img)
     {
         uint[] rgba = ImageToRgba(img);
-        int width = img.Width;
-        int height = img.Height;
+        long width = img.Columns;
+        long height = img.Rows;
         int num1 = -1;
         byte[] numArray = new byte[Shared.AddPadding(width, 4) * Shared.AddPadding(height, 4) * 2];
         for (int index1 = 0; index1 < height; index1 += 4)
@@ -1274,7 +1319,7 @@ public sealed class TPL : IDisposable
         return numArray;
     }
 
-    private byte[] FromI4(byte[] tpl, int width, int height)
+    private byte[] FromI4(byte[] tpl, long width, long height)
     {
         uint[] array = new uint[width * height];
         int num1 = 0;
@@ -1308,11 +1353,11 @@ public sealed class TPL : IDisposable
         return Shared.UIntArrayToByteArray(array);
     }
 
-    private byte[] ToI4(Image<Argb32> img)
+    private byte[] ToI4(ImageFrame img)
     {
         uint[] rgba = ImageToRgba(img);
-        int width = img.Width;
-        int height = img.Height;
+        long width = img.Columns;
+        long height = img.Rows;
         int num1 = 0;
         byte[] numArray = new byte[Shared.AddPadding(width, 8) * Shared.AddPadding(height, 8) / 2];
         for (int index1 = 0; index1 < height; index1 += 8)
@@ -1363,7 +1408,7 @@ public sealed class TPL : IDisposable
         return numArray;
     }
 
-    private byte[] FromI8(byte[] tpl, int width, int height)
+    private byte[] FromI8(byte[] tpl, long width, long height)
     {
         uint[] array = new uint[width * height];
         int num1 = 0;
@@ -1389,11 +1434,11 @@ public sealed class TPL : IDisposable
         return Shared.UIntArrayToByteArray(array);
     }
 
-    private byte[] ToI8(Image<Argb32> img)
+    private byte[] ToI8(ImageFrame img)
     {
         uint[] rgba = ImageToRgba(img);
-        int width = img.Width;
-        int height = img.Height;
+        long width = img.Columns;
+        long height = img.Rows;
         int num1 = 0;
         byte[] numArray = new byte[Shared.AddPadding(width, 8) * Shared.AddPadding(height, 4)];
         for (int index1 = 0; index1 < height; index1 += 4)
@@ -1429,7 +1474,7 @@ public sealed class TPL : IDisposable
         return numArray;
     }
 
-    private byte[] FromIA4(byte[] tpl, int width, int height)
+    private byte[] FromIA4(byte[] tpl, long width, long height)
     {
         uint[] array = new uint[width * height];
         int num1 = 0;
@@ -1457,11 +1502,11 @@ public sealed class TPL : IDisposable
         return Shared.UIntArrayToByteArray(array);
     }
 
-    private byte[] ToIA4(Image<Argb32> img)
+    private byte[] ToIA4(ImageFrame img)
     {
         uint[] rgba = ImageToRgba(img);
-        int width = img.Width;
-        int height = img.Height;
+        long width = img.Columns;
+        long height = img.Rows;
         int num1 = 0;
         byte[] numArray = new byte[Shared.AddPadding(width, 8) * Shared.AddPadding(height, 4)];
         for (int index1 = 0; index1 < height; index1 += 4)
@@ -1505,7 +1550,7 @@ public sealed class TPL : IDisposable
         return numArray;
     }
 
-    private byte[] FromIA8(byte[] tpl, int width, int height)
+    private byte[] FromIA8(byte[] tpl, long width, long height)
     {
         uint[] array = new uint[width * height];
         int num1 = 0;
@@ -1533,11 +1578,11 @@ public sealed class TPL : IDisposable
         return Shared.UIntArrayToByteArray(array);
     }
 
-    private byte[] ToIA8(Image<Argb32> img)
+    private byte[] ToIA8(ImageFrame img)
     {
         uint[] rgba = ImageToRgba(img);
-        int width = img.Width;
-        int height = img.Height;
+        var width = img.Columns;
+        var height = img.Rows;
         int num1 = 0;
         byte[] numArray1 = new byte[Shared.AddPadding(width, 4) * Shared.AddPadding(height, 4) * 2];
         for (int index1 = 0; index1 < height; index1 += 4)
@@ -1584,7 +1629,7 @@ public sealed class TPL : IDisposable
         return numArray1;
     }
 
-    private byte[] FromCI4(byte[] tpl, uint[] paletteData, int width, int height)
+    private byte[] FromCI4(byte[] tpl, uint[] paletteData, long width, long height)
     {
         uint[] array = new uint[width * height];
         int num1 = 0;
@@ -1612,7 +1657,7 @@ public sealed class TPL : IDisposable
         return Shared.UIntArrayToByteArray(array);
     }
 
-    private byte[] FromCI8(byte[] tpl, uint[] paletteData, int width, int height)
+    private byte[] FromCI8(byte[] tpl, uint[] paletteData, long width, long height)
     {
         uint[] array = new uint[width * height];
         int num1 = 0;
@@ -1636,7 +1681,7 @@ public sealed class TPL : IDisposable
         return Shared.UIntArrayToByteArray(array);
     }
 
-    private byte[] FromCI14X2(byte[] tpl, uint[] paletteData, int width, int height)
+    private byte[] FromCI14X2(byte[] tpl, uint[] paletteData, long width, long height)
     {
         uint[] array = new uint[width * height];
         int num1 = 0;
@@ -1660,7 +1705,7 @@ public sealed class TPL : IDisposable
         return Shared.UIntArrayToByteArray(array);
     }
 
-    private byte[] FromCMP(byte[] tpl, int width, int height)
+    private byte[] FromCMP(byte[] tpl, long width, long height)
     {
         uint[] array = new uint[width * height];
         ushort[] numArray1 = new ushort[4];
@@ -1670,7 +1715,7 @@ public sealed class TPL : IDisposable
         {
             for (int index3 = 0; index3 < width; ++index3)
             {
-                int num1 = Shared.AddPadding(width, 8);
+                int num1 = (int)Shared.AddPadding(width, 8);
                 int num2 = index3 & 3;
                 int num3 = index3 >> 2 & 1;
                 int num4 = index3 >> 3;
@@ -1709,17 +1754,6 @@ public sealed class TPL : IDisposable
             }
         }
         return Shared.UIntArrayToByteArray(array);
-    }
-
-    private void FireDebug(string debugMessage, params object[] args)
-    {
-        EventHandler<MessageEventArgs> debug = Debug;
-        if (debug == null)
-        {
-            return;
-        }
-
-        debug(new object(), new MessageEventArgs(string.Format(debugMessage, args)));
     }
 }
 
@@ -1873,8 +1907,8 @@ internal class ColorIndexConverter
     private byte[] tplData;
     private readonly TPL_TextureFormat tplFormat;
     private readonly TPL_PaletteFormat paletteFormat;
-    private readonly int width;
-    private readonly int height;
+    private readonly long width;
+    private readonly long height;
 
     public byte[] Palette => tplPalette;
 
@@ -1882,8 +1916,8 @@ internal class ColorIndexConverter
 
     public ColorIndexConverter(
         uint[] rgbaData,
-        int width,
-        int height,
+        long width,
+        long height,
         TPL_TextureFormat tplFormat,
         TPL_PaletteFormat paletteFormat
     )
@@ -2031,8 +2065,8 @@ internal class ColorIndexConverter
             num1 = 16384;
         }
 
-        List<uint> uintList = new List<uint>();
-        List<ushort> ushortList = new List<ushort>();
+        List<uint> uintList = [];
+        List<ushort> ushortList = [];
         uintList.Add(0U);
         ushortList.Add(0);
         for (int index = 1; index < rgbaData.Length && uintList.Count != num1; ++index)
@@ -2055,8 +2089,8 @@ internal class ColorIndexConverter
             uintList.Add(uint.MaxValue);
             ushortList.Add(ushort.MaxValue);
         }
-        tplPalette = Shared.UShortArrayToByteArray(ushortList.ToArray());
-        rgbaPalette = uintList.ToArray();
+        tplPalette = Shared.UShortArrayToByteArray([.. ushortList]);
+        rgbaPalette = [.. uintList];
     }
 
     private ushort ConvertToPaletteValue(int rgba)

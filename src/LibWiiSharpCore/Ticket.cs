@@ -18,612 +18,602 @@
  */
 
 using System.Security.Cryptography;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
-namespace LibWiiSharpCore
+namespace LibWiiSharpCore;
+
+public enum CommonKeyType : byte
 {
-    public enum CommonKeyType : byte
+    Standard = 0x00,
+    Korean = 0x01,
+}
+
+public class Ticket(ILogger<Ticket>? logger = null)
+{
+    private readonly ILogger<Ticket> _logger = logger ?? NullLogger<Ticket>.Instance;
+
+    private byte newKeyIndex;
+    private byte[] decryptedTitleKey = new byte[16];
+    private bool fakeSign;
+    private bool titleKeyChanged;
+    private byte[] newEncryptedTitleKey = [];
+    private bool reDecrypt;
+    private uint signatureExponent = 65537;
+    private byte[] signature = new byte[256];
+    private readonly byte[] padding = new byte[60];
+    private readonly byte[] issuer = new byte[64];
+    private readonly byte[] unknown = new byte[63];
+    private byte[] encryptedTitleKey = new byte[16];
+    private byte unknown2;
+    private ulong titleId;
+    private ushort unknown3 = ushort.MaxValue;
+    private ushort numOfDlc;
+    private ulong unknown4;
+    private byte padding2;
+    private byte commonKeyIndex;
+    private readonly byte[] unknown5 = new byte[48];
+    private readonly byte[] unknown6 = new byte[32];
+    private ushort padding3;
+    private uint enableTimeLimit;
+    private uint timeLimit;
+    private readonly byte[] padding4 = new byte[88];
+
+    public byte[] TitleKey
     {
-        Standard = 0x00,
-        Korean = 0x01,
+        get => decryptedTitleKey;
+        set
+        {
+            decryptedTitleKey = value;
+            titleKeyChanged = true;
+            reDecrypt = false;
+        }
     }
 
-    public class Ticket
+    public CommonKeyType CommonKeyIndex
     {
-        private byte newKeyIndex;
-        private byte[] decryptedTitleKey = new byte[16];
-        private bool fakeSign;
-        private bool titleKeyChanged;
-        private byte[] newEncryptedTitleKey = [];
-        private bool reDecrypt;
-        private uint signatureExponent = 65537;
-        private byte[] signature = new byte[256];
-        private readonly byte[] padding = new byte[60];
-        private readonly byte[] issuer = new byte[64];
-        private readonly byte[] unknown = new byte[63];
-        private byte[] encryptedTitleKey = new byte[16];
-        private byte unknown2;
-        private ulong titleId;
-        private ushort unknown3 = ushort.MaxValue;
-        private ushort numOfDlc;
-        private ulong unknown4;
-        private byte padding2;
-        private byte commonKeyIndex;
-        private readonly byte[] unknown5 = new byte[48];
-        private readonly byte[] unknown6 = new byte[32];
-        private ushort padding3;
-        private uint enableTimeLimit;
-        private uint timeLimit;
-        private readonly byte[] padding4 = new byte[88];
+        get => (CommonKeyType)newKeyIndex;
+        set => newKeyIndex = (byte)value;
+    }
 
-        public byte[] TitleKey
+    public ulong TicketID { get; set; }
+
+    public uint ConsoleID { get; set; }
+
+    public ulong TitleID
+    {
+        get => titleId;
+        set
         {
-            get => decryptedTitleKey;
-            set
-            {
-                decryptedTitleKey = value;
-                titleKeyChanged = true;
-                reDecrypt = false;
-            }
-        }
-
-        public CommonKeyType CommonKeyIndex
-        {
-            get => (CommonKeyType)newKeyIndex;
-            set => newKeyIndex = (byte)value;
-        }
-
-        public ulong TicketID { get; set; }
-
-        public uint ConsoleID { get; set; }
-
-        public ulong TitleID
-        {
-            get => titleId;
-            set
-            {
-                titleId = value;
-                if (!reDecrypt)
-                {
-                    return;
-                }
-
-                PrivReDecryptTitleKey();
-            }
-        }
-
-        public ushort NumOfDLC
-        {
-            get => numOfDlc;
-            set => numOfDlc = value;
-        }
-
-        public bool FakeSign
-        {
-            get => fakeSign;
-            set => fakeSign = value;
-        }
-
-        public bool TitleKeyChanged => titleKeyChanged;
-
-        public event EventHandler<MessageEventArgs>? Debug;
-
-        public static Ticket Load(string pathToTicket)
-        {
-            return Load(File.ReadAllBytes(pathToTicket));
-        }
-
-        public static Ticket Load(byte[] ticket)
-        {
-            Ticket ticket1 = new();
-            MemoryStream memoryStream = new(ticket);
-            try
-            {
-                ticket1.PrivParseTicket(memoryStream);
-            }
-            catch
-            {
-                memoryStream.Dispose();
-                throw;
-            }
-            memoryStream.Dispose();
-            return ticket1;
-        }
-
-        public static Ticket Load(Stream ticket)
-        {
-            Ticket ticket1 = new();
-            ticket1.PrivParseTicket(ticket);
-            return ticket1;
-        }
-
-        public void LoadFile(string pathToTicket)
-        {
-            LoadFile(File.ReadAllBytes(pathToTicket));
-        }
-
-        public void LoadFile(byte[] ticket)
-        {
-            MemoryStream memoryStream = new(ticket);
-            try
-            {
-                PrivParseTicket(memoryStream);
-            }
-            catch
-            {
-                memoryStream.Dispose();
-                throw;
-            }
-            memoryStream.Dispose();
-        }
-
-        public void LoadFile(Stream ticket)
-        {
-            PrivParseTicket(ticket);
-        }
-
-        public void Save(string savePath)
-        {
-            Save(savePath, false);
-        }
-
-        public void Save(string savePath, bool fakeSign)
-        {
-            if (fakeSign)
-            {
-                this.fakeSign = true;
-            }
-
-            if (File.Exists(savePath))
-            {
-                File.Delete(savePath);
-            }
-
-            using FileStream fileStream = new(savePath, FileMode.Create);
-            PrivWriteToStream(fileStream);
-        }
-
-        public MemoryStream ToMemoryStream()
-        {
-            return ToMemoryStream(false);
-        }
-
-        public MemoryStream ToMemoryStream(bool fakeSign)
-        {
-            if (fakeSign)
-            {
-                this.fakeSign = true;
-            }
-
-            MemoryStream memoryStream = new();
-            try
-            {
-                PrivWriteToStream(memoryStream);
-                return memoryStream;
-            }
-            catch
-            {
-                memoryStream.Dispose();
-                throw;
-            }
-        }
-
-        public byte[] ToByteArray()
-        {
-            return ToByteArray(false);
-        }
-
-        public byte[] ToByteArray(bool fakeSign)
-        {
-            if (fakeSign)
-            {
-                this.fakeSign = true;
-            }
-
-            MemoryStream memoryStream = new();
-            try
-            {
-                PrivWriteToStream(memoryStream);
-            }
-            catch
-            {
-                memoryStream.Dispose();
-                throw;
-            }
-            byte[] array = memoryStream.ToArray();
-            memoryStream.Dispose();
-            return array;
-        }
-
-        public void SetTitleKey(string newTitleKey)
-        {
-            SetTitleKey(newTitleKey.ToCharArray());
-        }
-
-        public void SetTitleKey(char[] newTitleKey)
-        {
-            if (newTitleKey.Length != 16)
-            {
-                throw new Exception("The title key must be 16 characters long!");
-            }
-
-            for (int index = 0; index < 16; ++index)
-            {
-                encryptedTitleKey[index] = (byte)newTitleKey[index];
-            }
-
-            PrivDecryptTitleKey();
-            titleKeyChanged = true;
-            reDecrypt = true;
-            newEncryptedTitleKey = encryptedTitleKey;
-        }
-
-        public void SetTitleKey(byte[] newTitleKey)
-        {
-            encryptedTitleKey =
-                newTitleKey.Length == 16
-                    ? newTitleKey
-                    : throw new Exception("The title key must be 16 characters long!");
-            PrivDecryptTitleKey();
-            titleKeyChanged = true;
-            reDecrypt = true;
-            newEncryptedTitleKey = newTitleKey;
-        }
-
-        public string GetUpperTitleID()
-        {
-            byte[] bytes = BitConverter.GetBytes(Shared.Swap((uint)titleId));
-            return new string([(char)bytes[0], (char)bytes[1], (char)bytes[2], (char)bytes[3]]);
-        }
-
-        private void PrivWriteToStream(Stream writeStream)
-        {
-            FireDebug("Writing Ticket...");
-            FireDebug("   Encrypting Title Key...");
-            PrivEncryptTitleKey();
-            FireDebug(
-                "    -> Decrypted Title Key: {0}",
-                (object)Shared.ByteArrayToString(decryptedTitleKey)
-            );
-            FireDebug(
-                "    -> Encrypted Title Key: {0}",
-                (object)Shared.ByteArrayToString(encryptedTitleKey)
-            );
-            if (fakeSign)
-            {
-                FireDebug("   Clearing Signature...");
-                signature = new byte[256];
-            }
-            MemoryStream memoryStream = new();
-            memoryStream.Seek(0L, SeekOrigin.Begin);
-            FireDebug(
-                "   Writing Signature Exponent... (Offset: 0x{0})",
-                (object)memoryStream.Position.ToString("x8").ToUpper()
-            );
-            memoryStream.Write(BitConverter.GetBytes(Shared.Swap(signatureExponent)), 0, 4);
-            FireDebug(
-                "   Writing Signature... (Offset: 0x{0})",
-                (object)memoryStream.Position.ToString("x8").ToUpper()
-            );
-            memoryStream.Write(signature, 0, signature.Length);
-            FireDebug(
-                "   Writing Padding... (Offset: 0x{0})",
-                (object)memoryStream.Position.ToString("x8").ToUpper()
-            );
-            memoryStream.Write(padding, 0, padding.Length);
-            FireDebug(
-                "   Writing Issuer... (Offset: 0x{0})",
-                (object)memoryStream.Position.ToString("x8").ToUpper()
-            );
-            memoryStream.Write(issuer, 0, issuer.Length);
-            FireDebug(
-                "   Writing Unknown... (Offset: 0x{0})",
-                (object)memoryStream.Position.ToString("x8").ToUpper()
-            );
-            memoryStream.Write(unknown, 0, unknown.Length);
-            FireDebug(
-                "   Writing Title Key... (Offset: 0x{0})",
-                (object)memoryStream.Position.ToString("x8").ToUpper()
-            );
-            memoryStream.Write(encryptedTitleKey, 0, encryptedTitleKey.Length);
-            FireDebug(
-                "   Writing Unknown2... (Offset: 0x{0})",
-                (object)memoryStream.Position.ToString("x8").ToUpper()
-            );
-            memoryStream.WriteByte(unknown2);
-            FireDebug(
-                "   Writing Ticket ID... (Offset: 0x{0})",
-                (object)memoryStream.Position.ToString("x8").ToUpper()
-            );
-            memoryStream.Write(BitConverter.GetBytes(Shared.Swap(TicketID)), 0, 8);
-            FireDebug(
-                "   Writing Console ID... (Offset: 0x{0})",
-                (object)memoryStream.Position.ToString("x8").ToUpper()
-            );
-            memoryStream.Write(BitConverter.GetBytes(Shared.Swap(ConsoleID)), 0, 4);
-            FireDebug(
-                "   Writing Title ID... (Offset: 0x{0})",
-                (object)memoryStream.Position.ToString("x8").ToUpper()
-            );
-            memoryStream.Write(BitConverter.GetBytes(Shared.Swap(titleId)), 0, 8);
-            FireDebug(
-                "   Writing Unknwon3... (Offset: 0x{0})",
-                (object)memoryStream.Position.ToString("x8").ToUpper()
-            );
-            memoryStream.Write(BitConverter.GetBytes(Shared.Swap(unknown3)), 0, 2);
-            FireDebug(
-                "   Writing NumOfDLC... (Offset: 0x{0})",
-                (object)memoryStream.Position.ToString("x8").ToUpper()
-            );
-            memoryStream.Write(BitConverter.GetBytes(Shared.Swap(numOfDlc)), 0, 2);
-            FireDebug(
-                "   Writing Unknwon4... (Offset: 0x{0})",
-                (object)memoryStream.Position.ToString("x8").ToUpper()
-            );
-            memoryStream.Write(BitConverter.GetBytes(Shared.Swap(unknown4)), 0, 8);
-            FireDebug(
-                "   Writing Padding2... (Offset: 0x{0})",
-                (object)memoryStream.Position.ToString("x8").ToUpper()
-            );
-            memoryStream.WriteByte(padding2);
-            FireDebug(
-                "   Writing Common Key Index... (Offset: 0x{0})",
-                (object)memoryStream.Position.ToString("x8").ToUpper()
-            );
-            memoryStream.WriteByte(commonKeyIndex);
-            object[] objArray1 = new object[1];
-            long position = memoryStream.Position;
-            objArray1[0] = position.ToString("x8").ToUpper();
-            FireDebug("   Writing Unknown5... (Offset: 0x{0})", objArray1);
-            memoryStream.Write(unknown5, 0, unknown5.Length);
-            object[] objArray2 = new object[1];
-            position = memoryStream.Position;
-            objArray2[0] = position.ToString("x8").ToUpper();
-            FireDebug("   Writing Unknown6... (Offset: 0x{0})", objArray2);
-            memoryStream.Write(unknown6, 0, unknown6.Length);
-            object[] objArray3 = new object[1];
-            position = memoryStream.Position;
-            objArray3[0] = position.ToString("x8").ToUpper();
-            FireDebug("   Writing Padding3... (Offset: 0x{0})", objArray3);
-            memoryStream.Write(BitConverter.GetBytes(Shared.Swap(padding3)), 0, 2);
-            object[] objArray4 = new object[1];
-            position = memoryStream.Position;
-            objArray4[0] = position.ToString("x8").ToUpper();
-            FireDebug("   Writing Enable Time Limit... (Offset: 0x{0})", objArray4);
-            memoryStream.Write(BitConverter.GetBytes(Shared.Swap(enableTimeLimit)), 0, 4);
-            object[] objArray5 = new object[1];
-            position = memoryStream.Position;
-            objArray5[0] = position.ToString("x8").ToUpper();
-            FireDebug("   Writing Time Limit... (Offset: 0x{0})", objArray5);
-            memoryStream.Write(BitConverter.GetBytes(Shared.Swap(timeLimit)), 0, 4);
-            object[] objArray6 = new object[1];
-            position = memoryStream.Position;
-            objArray6[0] = position.ToString("x8").ToUpper();
-            FireDebug("   Writing Padding4... (Offset: 0x{0})", objArray6);
-            memoryStream.Write(padding4, 0, padding4.Length);
-            byte[] array = memoryStream.ToArray();
-            memoryStream.Dispose();
-            if (fakeSign)
-            {
-                FireDebug("   Fakesigning Ticket...");
-                //byte[] numArray = new byte[20];
-                SHA1 shA1 = SHA1.Create();
-                for (ushort index = 0; index < ushort.MaxValue; ++index)
-                {
-                    byte[] bytes = BitConverter.GetBytes(index);
-                    array[498] = bytes[1];
-                    array[499] = bytes[0];
-                    if (shA1.ComputeHash(array)[0] == 0)
-                    {
-                        FireDebug("   -> Signed ({0})", (object)index);
-                        break;
-                    }
-                    if (index == 65534)
-                    {
-                        FireDebug("    -> Signing Failed...");
-                        throw new Exception("Fakesigning failed...");
-                    }
-                }
-                shA1.Clear();
-            }
-            writeStream.Seek(0L, SeekOrigin.Begin);
-            writeStream.Write(array, 0, array.Length);
-            FireDebug("Writing Ticket Finished...");
-        }
-
-        private void PrivParseTicket(Stream ticketFile)
-        {
-            FireDebug("Parsing Ticket...");
-            ticketFile.Seek(0L, SeekOrigin.Begin);
-            byte[] buffer = new byte[8];
-            FireDebug(
-                "   Reading Signature Exponent... (Offset: 0x{0})",
-                (object)ticketFile.Position.ToString("x8").ToUpper()
-            );
-            ticketFile.ReadExactly(buffer, 0, 4);
-            signatureExponent = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
-            FireDebug(
-                "   Reading Signature... (Offset: 0x{0})",
-                (object)ticketFile.Position.ToString("x8").ToUpper()
-            );
-            ticketFile.ReadExactly(signature);
-            FireDebug(
-                "   Reading Padding... (Offset: 0x{0})",
-                (object)ticketFile.Position.ToString("x8").ToUpper()
-            );
-            ticketFile.ReadExactly(padding);
-            FireDebug(
-                "   Reading Issuer... (Offset: 0x{0})",
-                (object)ticketFile.Position.ToString("x8").ToUpper()
-            );
-            ticketFile.ReadExactly(issuer);
-            FireDebug(
-                "   Reading Unknown... (Offset: 0x{0})",
-                (object)ticketFile.Position.ToString("x8").ToUpper()
-            );
-            ticketFile.ReadExactly(unknown);
-            FireDebug(
-                "   Reading Title Key... (Offset: 0x{0})",
-                (object)ticketFile.Position.ToString("x8").ToUpper()
-            );
-            ticketFile.ReadExactly(encryptedTitleKey);
-            FireDebug(
-                "   Reading Unknown2... (Offset: 0x{0})",
-                (object)ticketFile.Position.ToString("x8").ToUpper()
-            );
-            unknown2 = (byte)ticketFile.ReadByte();
-            FireDebug(
-                "   Reading Ticket ID.. (Offset: 0x{0})",
-                (object)ticketFile.Position.ToString("x8").ToUpper()
-            );
-            ticketFile.ReadExactly(buffer, 0, 8);
-            TicketID = Shared.Swap(BitConverter.ToUInt64(buffer, 0));
-            FireDebug(
-                "   Reading Console ID... (Offset: 0x{0})",
-                (object)ticketFile.Position.ToString("x8").ToUpper()
-            );
-            ticketFile.ReadExactly(buffer, 0, 4);
-            ConsoleID = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
-            FireDebug(
-                "   Reading Title ID... (Offset: 0x{0})",
-                (object)ticketFile.Position.ToString("x8").ToUpper()
-            );
-            ticketFile.ReadExactly(buffer, 0, 8);
-            titleId = Shared.Swap(BitConverter.ToUInt64(buffer, 0));
-            FireDebug(
-                "   Reading Unknown3... (Offset: 0x{0})",
-                (object)ticketFile.Position.ToString("x8").ToUpper()
-            );
-            FireDebug(
-                "   Reading NumOfDLC... (Offset: 0x{0})",
-                (object)ticketFile.Position.ToString("x8").ToUpper()
-            );
-            ticketFile.ReadExactly(buffer, 0, 4);
-            unknown3 = Shared.Swap(BitConverter.ToUInt16(buffer, 0));
-            numOfDlc = Shared.Swap(BitConverter.ToUInt16(buffer, 2));
-            FireDebug(
-                "   Reading Unknown4... (Offset: 0x{0})",
-                (object)ticketFile.Position.ToString("x8").ToUpper()
-            );
-            ticketFile.ReadExactly(buffer, 0, 8);
-            unknown4 = Shared.Swap(BitConverter.ToUInt64(buffer, 0));
-            FireDebug(
-                "   Reading Padding2... (Offset: 0x{0})",
-                (object)ticketFile.Position.ToString("x8").ToUpper()
-            );
-            padding2 = (byte)ticketFile.ReadByte();
-            FireDebug(
-                "   Reading Common Key Index... (Offset: 0x{0})",
-                (object)ticketFile.Position.ToString("x8").ToUpper()
-            );
-            commonKeyIndex = (byte)ticketFile.ReadByte();
-            newKeyIndex = commonKeyIndex;
-            FireDebug(
-                "   Reading Unknown5... (Offset: 0x{0})",
-                (object)ticketFile.Position.ToString("x8").ToUpper()
-            );
-            ticketFile.ReadExactly(unknown5);
-            FireDebug(
-                "   Reading Unknown6... (Offset: 0x{0})",
-                (object)ticketFile.Position.ToString("x8").ToUpper()
-            );
-            ticketFile.ReadExactly(unknown6);
-            FireDebug(
-                "   Reading Padding3... (Offset: 0x{0})",
-                (object)ticketFile.Position.ToString("x8").ToUpper()
-            );
-            ticketFile.ReadExactly(buffer, 0, 2);
-            padding3 = Shared.Swap(BitConverter.ToUInt16(buffer, 0));
-            FireDebug(
-                "   Reading Enable Time Limit... (Offset: 0x{0})",
-                (object)ticketFile.Position.ToString("x8").ToUpper()
-            );
-            FireDebug(
-                "   Reading Time Limit... (Offset: 0x{0})",
-                (object)ticketFile.Position.ToString("x8").ToUpper()
-            );
-            ticketFile.ReadExactly(buffer, 0, 8);
-            enableTimeLimit = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
-            timeLimit = Shared.Swap(BitConverter.ToUInt32(buffer, 4));
-            FireDebug(
-                "   Reading Padding4... (Offset: 0x{0})",
-                (object)ticketFile.Position.ToString("x8").ToUpper()
-            );
-            ticketFile.ReadExactly(padding4);
-            FireDebug("   Decrypting Title Key...");
-            PrivDecryptTitleKey();
-            FireDebug(
-                "    -> Encrypted Title Key: {0}",
-                (object)Shared.ByteArrayToString(encryptedTitleKey)
-            );
-            FireDebug(
-                "    -> Decrypted Title Key: {0}",
-                (object)Shared.ByteArrayToString(decryptedTitleKey)
-            );
-            FireDebug("Parsing Ticket Finished...");
-        }
-
-        private void PrivDecryptTitleKey()
-        {
-            byte[] numArray =
-                commonKeyIndex == 1 ? CommonKey.GetKoreanKey() : CommonKey.GetStandardKey();
-            byte[] bytes = BitConverter.GetBytes(Shared.Swap(titleId));
-            Array.Resize<byte>(ref bytes, 16);
-            Aes aes = Aes.Create();
-            aes.Mode = CipherMode.CBC;
-            aes.Padding = PaddingMode.None;
-            aes.KeySize = 128;
-            aes.BlockSize = 128;
-            aes.Key = numArray;
-            aes.IV = bytes;
-            ICryptoTransform decryptor = aes.CreateDecryptor();
-            MemoryStream memoryStream = new(encryptedTitleKey);
-            CryptoStream cryptoStream = new(memoryStream, decryptor, CryptoStreamMode.Read);
-            cryptoStream.ReadExactly(decryptedTitleKey);
-            cryptoStream.Dispose();
-            memoryStream.Dispose();
-            decryptor.Dispose();
-            aes.Clear();
-        }
-
-        private void PrivEncryptTitleKey()
-        {
-            commonKeyIndex = newKeyIndex;
-            byte[] numArray =
-                commonKeyIndex == 1 ? CommonKey.GetKoreanKey() : CommonKey.GetStandardKey();
-            byte[] bytes = BitConverter.GetBytes(Shared.Swap(titleId));
-            Array.Resize<byte>(ref bytes, 16);
-            Aes aes = Aes.Create();
-            aes.Mode = CipherMode.CBC;
-            aes.Padding = PaddingMode.None;
-            aes.KeySize = 128;
-            aes.BlockSize = 128;
-            aes.Key = numArray;
-            aes.IV = bytes;
-            ICryptoTransform encryptor = aes.CreateEncryptor();
-            MemoryStream memoryStream = new(decryptedTitleKey);
-            CryptoStream cryptoStream = new(memoryStream, encryptor, CryptoStreamMode.Read);
-            cryptoStream.ReadExactly(encryptedTitleKey);
-            cryptoStream.Dispose();
-            memoryStream.Dispose();
-            encryptor.Dispose();
-            aes.Clear();
-        }
-
-        private void PrivReDecryptTitleKey()
-        {
-            encryptedTitleKey = newEncryptedTitleKey;
-            PrivDecryptTitleKey();
-        }
-
-        private void FireDebug(string debugMessage, params object[] args)
-        {
-            EventHandler<MessageEventArgs>? debug = Debug;
-            if (debug == null)
+            titleId = value;
+            if (!reDecrypt)
             {
                 return;
             }
 
-            debug(new object(), new MessageEventArgs(string.Format(debugMessage, args)));
+            PrivReDecryptTitleKey();
         }
+    }
+
+    public ushort NumOfDLC
+    {
+        get => numOfDlc;
+        set => numOfDlc = value;
+    }
+
+    public bool FakeSign
+    {
+        get => fakeSign;
+        set => fakeSign = value;
+    }
+
+    public bool TitleKeyChanged => titleKeyChanged;
+
+    public static Ticket Load(string pathToTicket)
+    {
+        return Load(File.ReadAllBytes(pathToTicket));
+    }
+
+    public static Ticket Load(byte[] ticket)
+    {
+        Ticket ticket1 = new();
+        MemoryStream memoryStream = new(ticket);
+        try
+        {
+            ticket1.PrivParseTicket(memoryStream);
+        }
+        catch
+        {
+            memoryStream.Dispose();
+            throw;
+        }
+        memoryStream.Dispose();
+        return ticket1;
+    }
+
+    public static Ticket Load(Stream ticket)
+    {
+        Ticket ticket1 = new();
+        ticket1.PrivParseTicket(ticket);
+        return ticket1;
+    }
+
+    public void LoadFile(string pathToTicket)
+    {
+        LoadFile(File.ReadAllBytes(pathToTicket));
+    }
+
+    public void LoadFile(byte[] ticket)
+    {
+        MemoryStream memoryStream = new(ticket);
+        try
+        {
+            PrivParseTicket(memoryStream);
+        }
+        catch
+        {
+            memoryStream.Dispose();
+            throw;
+        }
+        memoryStream.Dispose();
+    }
+
+    public void LoadFile(Stream ticket)
+    {
+        PrivParseTicket(ticket);
+    }
+
+    public void Save(string savePath)
+    {
+        Save(savePath, false);
+    }
+
+    public void Save(string savePath, bool fakeSign)
+    {
+        if (fakeSign)
+        {
+            this.fakeSign = true;
+        }
+
+        if (File.Exists(savePath))
+        {
+            File.Delete(savePath);
+        }
+
+        using FileStream fileStream = new(savePath, FileMode.Create);
+        PrivWriteToStream(fileStream);
+    }
+
+    public MemoryStream ToMemoryStream()
+    {
+        return ToMemoryStream(false);
+    }
+
+    public MemoryStream ToMemoryStream(bool fakeSign)
+    {
+        if (fakeSign)
+        {
+            this.fakeSign = true;
+        }
+
+        MemoryStream memoryStream = new();
+        try
+        {
+            PrivWriteToStream(memoryStream);
+            return memoryStream;
+        }
+        catch
+        {
+            memoryStream.Dispose();
+            throw;
+        }
+    }
+
+    public byte[] ToByteArray()
+    {
+        return ToByteArray(false);
+    }
+
+    public byte[] ToByteArray(bool fakeSign)
+    {
+        if (fakeSign)
+        {
+            this.fakeSign = true;
+        }
+
+        MemoryStream memoryStream = new();
+        try
+        {
+            PrivWriteToStream(memoryStream);
+        }
+        catch
+        {
+            memoryStream.Dispose();
+            throw;
+        }
+        byte[] array = memoryStream.ToArray();
+        memoryStream.Dispose();
+        return array;
+    }
+
+    public void SetTitleKey(string newTitleKey)
+    {
+        SetTitleKey(newTitleKey.ToCharArray());
+    }
+
+    public void SetTitleKey(char[] newTitleKey)
+    {
+        if (newTitleKey.Length != 16)
+        {
+            throw new Exception("The title key must be 16 characters long!");
+        }
+
+        for (int index = 0; index < 16; ++index)
+        {
+            encryptedTitleKey[index] = (byte)newTitleKey[index];
+        }
+
+        PrivDecryptTitleKey();
+        titleKeyChanged = true;
+        reDecrypt = true;
+        newEncryptedTitleKey = encryptedTitleKey;
+    }
+
+    public void SetTitleKey(byte[] newTitleKey)
+    {
+        encryptedTitleKey =
+            newTitleKey.Length == 16
+                ? newTitleKey
+                : throw new Exception("The title key must be 16 characters long!");
+        PrivDecryptTitleKey();
+        titleKeyChanged = true;
+        reDecrypt = true;
+        newEncryptedTitleKey = newTitleKey;
+    }
+
+    public string GetUpperTitleID()
+    {
+        byte[] bytes = BitConverter.GetBytes(Shared.Swap((uint)titleId));
+        return new string([(char)bytes[0], (char)bytes[1], (char)bytes[2], (char)bytes[3]]);
+    }
+
+    private void PrivWriteToStream(Stream writeStream)
+    {
+        _logger.LogDebug("Writing Ticket...");
+        _logger.LogDebug("   Encrypting Title Key...");
+        PrivEncryptTitleKey();
+        _logger.LogDebug(
+            "    -> Decrypted Title Key: {0}",
+            (object)Shared.ByteArrayToString(decryptedTitleKey)
+        );
+        _logger.LogDebug(
+            "    -> Encrypted Title Key: {0}",
+            (object)Shared.ByteArrayToString(encryptedTitleKey)
+        );
+        if (fakeSign)
+        {
+            _logger.LogDebug("   Clearing Signature...");
+            signature = new byte[256];
+        }
+        MemoryStream memoryStream = new();
+        memoryStream.Seek(0L, SeekOrigin.Begin);
+        _logger.LogDebug(
+            "   Writing Signature Exponent... (Offset: 0x{0})",
+            (object)memoryStream.Position.ToString("x8").ToUpper()
+        );
+        memoryStream.Write(BitConverter.GetBytes(Shared.Swap(signatureExponent)), 0, 4);
+        _logger.LogDebug(
+            "   Writing Signature... (Offset: 0x{0})",
+            (object)memoryStream.Position.ToString("x8").ToUpper()
+        );
+        memoryStream.Write(signature, 0, signature.Length);
+        _logger.LogDebug(
+            "   Writing Padding... (Offset: 0x{0})",
+            (object)memoryStream.Position.ToString("x8").ToUpper()
+        );
+        memoryStream.Write(padding, 0, padding.Length);
+        _logger.LogDebug(
+            "   Writing Issuer... (Offset: 0x{0})",
+            (object)memoryStream.Position.ToString("x8").ToUpper()
+        );
+        memoryStream.Write(issuer, 0, issuer.Length);
+        _logger.LogDebug(
+            "   Writing Unknown... (Offset: 0x{0})",
+            (object)memoryStream.Position.ToString("x8").ToUpper()
+        );
+        memoryStream.Write(unknown, 0, unknown.Length);
+        _logger.LogDebug(
+            "   Writing Title Key... (Offset: 0x{0})",
+            (object)memoryStream.Position.ToString("x8").ToUpper()
+        );
+        memoryStream.Write(encryptedTitleKey, 0, encryptedTitleKey.Length);
+        _logger.LogDebug(
+            "   Writing Unknown2... (Offset: 0x{0})",
+            (object)memoryStream.Position.ToString("x8").ToUpper()
+        );
+        memoryStream.WriteByte(unknown2);
+        _logger.LogDebug(
+            "   Writing Ticket ID... (Offset: 0x{0})",
+            (object)memoryStream.Position.ToString("x8").ToUpper()
+        );
+        memoryStream.Write(BitConverter.GetBytes(Shared.Swap(TicketID)), 0, 8);
+        _logger.LogDebug(
+            "   Writing Console ID... (Offset: 0x{0})",
+            (object)memoryStream.Position.ToString("x8").ToUpper()
+        );
+        memoryStream.Write(BitConverter.GetBytes(Shared.Swap(ConsoleID)), 0, 4);
+        _logger.LogDebug(
+            "   Writing Title ID... (Offset: 0x{0})",
+            (object)memoryStream.Position.ToString("x8").ToUpper()
+        );
+        memoryStream.Write(BitConverter.GetBytes(Shared.Swap(titleId)), 0, 8);
+        _logger.LogDebug(
+            "   Writing Unknwon3... (Offset: 0x{0})",
+            (object)memoryStream.Position.ToString("x8").ToUpper()
+        );
+        memoryStream.Write(BitConverter.GetBytes(Shared.Swap(unknown3)), 0, 2);
+        _logger.LogDebug(
+            "   Writing NumOfDLC... (Offset: 0x{0})",
+            (object)memoryStream.Position.ToString("x8").ToUpper()
+        );
+        memoryStream.Write(BitConverter.GetBytes(Shared.Swap(numOfDlc)), 0, 2);
+        _logger.LogDebug(
+            "   Writing Unknwon4... (Offset: 0x{0})",
+            (object)memoryStream.Position.ToString("x8").ToUpper()
+        );
+        memoryStream.Write(BitConverter.GetBytes(Shared.Swap(unknown4)), 0, 8);
+        _logger.LogDebug(
+            "   Writing Padding2... (Offset: 0x{0})",
+            (object)memoryStream.Position.ToString("x8").ToUpper()
+        );
+        memoryStream.WriteByte(padding2);
+        _logger.LogDebug(
+            "   Writing Common Key Index... (Offset: 0x{0})",
+            (object)memoryStream.Position.ToString("x8").ToUpper()
+        );
+        memoryStream.WriteByte(commonKeyIndex);
+        object[] objArray1 = new object[1];
+        long position = memoryStream.Position;
+        objArray1[0] = position.ToString("x8").ToUpper();
+        _logger.LogDebug("   Writing Unknown5... (Offset: 0x{0})", objArray1);
+        memoryStream.Write(unknown5, 0, unknown5.Length);
+        object[] objArray2 = new object[1];
+        position = memoryStream.Position;
+        objArray2[0] = position.ToString("x8").ToUpper();
+        _logger.LogDebug("   Writing Unknown6... (Offset: 0x{0})", objArray2);
+        memoryStream.Write(unknown6, 0, unknown6.Length);
+        object[] objArray3 = new object[1];
+        position = memoryStream.Position;
+        objArray3[0] = position.ToString("x8").ToUpper();
+        _logger.LogDebug("   Writing Padding3... (Offset: 0x{0})", objArray3);
+        memoryStream.Write(BitConverter.GetBytes(Shared.Swap(padding3)), 0, 2);
+        object[] objArray4 = new object[1];
+        position = memoryStream.Position;
+        objArray4[0] = position.ToString("x8").ToUpper();
+        _logger.LogDebug("   Writing Enable Time Limit... (Offset: 0x{0})", objArray4);
+        memoryStream.Write(BitConverter.GetBytes(Shared.Swap(enableTimeLimit)), 0, 4);
+        object[] objArray5 = new object[1];
+        position = memoryStream.Position;
+        objArray5[0] = position.ToString("x8").ToUpper();
+        _logger.LogDebug("   Writing Time Limit... (Offset: 0x{0})", objArray5);
+        memoryStream.Write(BitConverter.GetBytes(Shared.Swap(timeLimit)), 0, 4);
+        object[] objArray6 = new object[1];
+        position = memoryStream.Position;
+        objArray6[0] = position.ToString("x8").ToUpper();
+        _logger.LogDebug("   Writing Padding4... (Offset: 0x{0})", objArray6);
+        memoryStream.Write(padding4, 0, padding4.Length);
+        byte[] array = memoryStream.ToArray();
+        memoryStream.Dispose();
+        if (fakeSign)
+        {
+            _logger.LogDebug("   Fakesigning Ticket...");
+            //byte[] numArray = new byte[20];
+            SHA1 shA1 = SHA1.Create();
+            for (ushort index = 0; index < ushort.MaxValue; ++index)
+            {
+                byte[] bytes = BitConverter.GetBytes(index);
+                array[498] = bytes[1];
+                array[499] = bytes[0];
+                if (shA1.ComputeHash(array)[0] == 0)
+                {
+                    _logger.LogDebug("   -> Signed ({0})", (object)index);
+                    break;
+                }
+                if (index == 65534)
+                {
+                    _logger.LogDebug("    -> Signing Failed...");
+                    throw new Exception("Fakesigning failed...");
+                }
+            }
+            shA1.Clear();
+        }
+        writeStream.Seek(0L, SeekOrigin.Begin);
+        writeStream.Write(array, 0, array.Length);
+        _logger.LogDebug("Writing Ticket Finished...");
+    }
+
+    private void PrivParseTicket(Stream ticketFile)
+    {
+        _logger.LogDebug("Parsing Ticket...");
+        ticketFile.Seek(0L, SeekOrigin.Begin);
+        byte[] buffer = new byte[8];
+        _logger.LogDebug(
+            "   Reading Signature Exponent... (Offset: 0x{0})",
+            (object)ticketFile.Position.ToString("x8").ToUpper()
+        );
+        ticketFile.ReadExactly(buffer, 0, 4);
+        signatureExponent = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
+        _logger.LogDebug(
+            "   Reading Signature... (Offset: 0x{0})",
+            (object)ticketFile.Position.ToString("x8").ToUpper()
+        );
+        ticketFile.ReadExactly(signature);
+        _logger.LogDebug(
+            "   Reading Padding... (Offset: 0x{0})",
+            (object)ticketFile.Position.ToString("x8").ToUpper()
+        );
+        ticketFile.ReadExactly(padding);
+        _logger.LogDebug(
+            "   Reading Issuer... (Offset: 0x{0})",
+            (object)ticketFile.Position.ToString("x8").ToUpper()
+        );
+        ticketFile.ReadExactly(issuer);
+        _logger.LogDebug(
+            "   Reading Unknown... (Offset: 0x{0})",
+            (object)ticketFile.Position.ToString("x8").ToUpper()
+        );
+        ticketFile.ReadExactly(unknown);
+        _logger.LogDebug(
+            "   Reading Title Key... (Offset: 0x{0})",
+            (object)ticketFile.Position.ToString("x8").ToUpper()
+        );
+        ticketFile.ReadExactly(encryptedTitleKey);
+        _logger.LogDebug(
+            "   Reading Unknown2... (Offset: 0x{0})",
+            (object)ticketFile.Position.ToString("x8").ToUpper()
+        );
+        unknown2 = (byte)ticketFile.ReadByte();
+        _logger.LogDebug(
+            "   Reading Ticket ID.. (Offset: 0x{0})",
+            (object)ticketFile.Position.ToString("x8").ToUpper()
+        );
+        ticketFile.ReadExactly(buffer, 0, 8);
+        TicketID = Shared.Swap(BitConverter.ToUInt64(buffer, 0));
+        _logger.LogDebug(
+            "   Reading Console ID... (Offset: 0x{0})",
+            (object)ticketFile.Position.ToString("x8").ToUpper()
+        );
+        ticketFile.ReadExactly(buffer, 0, 4);
+        ConsoleID = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
+        _logger.LogDebug(
+            "   Reading Title ID... (Offset: 0x{0})",
+            (object)ticketFile.Position.ToString("x8").ToUpper()
+        );
+        ticketFile.ReadExactly(buffer, 0, 8);
+        titleId = Shared.Swap(BitConverter.ToUInt64(buffer, 0));
+        _logger.LogDebug(
+            "   Reading Unknown3... (Offset: 0x{0})",
+            (object)ticketFile.Position.ToString("x8").ToUpper()
+        );
+        _logger.LogDebug(
+            "   Reading NumOfDLC... (Offset: 0x{0})",
+            (object)ticketFile.Position.ToString("x8").ToUpper()
+        );
+        ticketFile.ReadExactly(buffer, 0, 4);
+        unknown3 = Shared.Swap(BitConverter.ToUInt16(buffer, 0));
+        numOfDlc = Shared.Swap(BitConverter.ToUInt16(buffer, 2));
+        _logger.LogDebug(
+            "   Reading Unknown4... (Offset: 0x{0})",
+            (object)ticketFile.Position.ToString("x8").ToUpper()
+        );
+        ticketFile.ReadExactly(buffer, 0, 8);
+        unknown4 = Shared.Swap(BitConverter.ToUInt64(buffer, 0));
+        _logger.LogDebug(
+            "   Reading Padding2... (Offset: 0x{0})",
+            (object)ticketFile.Position.ToString("x8").ToUpper()
+        );
+        padding2 = (byte)ticketFile.ReadByte();
+        _logger.LogDebug(
+            "   Reading Common Key Index... (Offset: 0x{0})",
+            (object)ticketFile.Position.ToString("x8").ToUpper()
+        );
+        commonKeyIndex = (byte)ticketFile.ReadByte();
+        newKeyIndex = commonKeyIndex;
+        _logger.LogDebug(
+            "   Reading Unknown5... (Offset: 0x{0})",
+            (object)ticketFile.Position.ToString("x8").ToUpper()
+        );
+        ticketFile.ReadExactly(unknown5);
+        _logger.LogDebug(
+            "   Reading Unknown6... (Offset: 0x{0})",
+            (object)ticketFile.Position.ToString("x8").ToUpper()
+        );
+        ticketFile.ReadExactly(unknown6);
+        _logger.LogDebug(
+            "   Reading Padding3... (Offset: 0x{0})",
+            (object)ticketFile.Position.ToString("x8").ToUpper()
+        );
+        ticketFile.ReadExactly(buffer, 0, 2);
+        padding3 = Shared.Swap(BitConverter.ToUInt16(buffer, 0));
+        _logger.LogDebug(
+            "   Reading Enable Time Limit... (Offset: 0x{0})",
+            (object)ticketFile.Position.ToString("x8").ToUpper()
+        );
+        _logger.LogDebug(
+            "   Reading Time Limit... (Offset: 0x{0})",
+            (object)ticketFile.Position.ToString("x8").ToUpper()
+        );
+        ticketFile.ReadExactly(buffer, 0, 8);
+        enableTimeLimit = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
+        timeLimit = Shared.Swap(BitConverter.ToUInt32(buffer, 4));
+        _logger.LogDebug(
+            "   Reading Padding4... (Offset: 0x{0})",
+            (object)ticketFile.Position.ToString("x8").ToUpper()
+        );
+        ticketFile.ReadExactly(padding4);
+        _logger.LogDebug("   Decrypting Title Key...");
+        PrivDecryptTitleKey();
+        _logger.LogDebug(
+            "    -> Encrypted Title Key: {0}",
+            (object)Shared.ByteArrayToString(encryptedTitleKey)
+        );
+        _logger.LogDebug(
+            "    -> Decrypted Title Key: {0}",
+            (object)Shared.ByteArrayToString(decryptedTitleKey)
+        );
+        _logger.LogDebug("Parsing Ticket Finished...");
+    }
+
+    private void PrivDecryptTitleKey()
+    {
+        byte[] numArray =
+            commonKeyIndex == 1 ? CommonKey.GetKoreanKey() : CommonKey.GetStandardKey();
+        byte[] bytes = BitConverter.GetBytes(Shared.Swap(titleId));
+        Array.Resize<byte>(ref bytes, 16);
+        Aes aes = Aes.Create();
+        aes.Mode = CipherMode.CBC;
+        aes.Padding = PaddingMode.None;
+        aes.KeySize = 128;
+        aes.BlockSize = 128;
+        aes.Key = numArray;
+        aes.IV = bytes;
+        ICryptoTransform decryptor = aes.CreateDecryptor();
+        MemoryStream memoryStream = new(encryptedTitleKey);
+        CryptoStream cryptoStream = new(memoryStream, decryptor, CryptoStreamMode.Read);
+        cryptoStream.ReadExactly(decryptedTitleKey);
+        cryptoStream.Dispose();
+        memoryStream.Dispose();
+        decryptor.Dispose();
+        aes.Clear();
+    }
+
+    private void PrivEncryptTitleKey()
+    {
+        commonKeyIndex = newKeyIndex;
+        byte[] numArray =
+            commonKeyIndex == 1 ? CommonKey.GetKoreanKey() : CommonKey.GetStandardKey();
+        byte[] bytes = BitConverter.GetBytes(Shared.Swap(titleId));
+        Array.Resize<byte>(ref bytes, 16);
+        Aes aes = Aes.Create();
+        aes.Mode = CipherMode.CBC;
+        aes.Padding = PaddingMode.None;
+        aes.KeySize = 128;
+        aes.BlockSize = 128;
+        aes.Key = numArray;
+        aes.IV = bytes;
+        ICryptoTransform encryptor = aes.CreateEncryptor();
+        MemoryStream memoryStream = new(decryptedTitleKey);
+        CryptoStream cryptoStream = new(memoryStream, encryptor, CryptoStreamMode.Read);
+        cryptoStream.ReadExactly(encryptedTitleKey);
+        cryptoStream.Dispose();
+        memoryStream.Dispose();
+        encryptor.Dispose();
+        aes.Clear();
+    }
+
+    private void PrivReDecryptTitleKey()
+    {
+        encryptedTitleKey = newEncryptedTitleKey;
+        PrivDecryptTitleKey();
     }
 }

@@ -19,7 +19,7 @@
 
 namespace LibWiiSharpCore;
 
-public readonly struct ContentIndices(int index, int contentIndex) : IComparable
+public readonly struct ContentIndices(int index, int contentIndex) : IComparable<ContentIndices>
 {
     private readonly int contentIndex = contentIndex;
 
@@ -27,13 +27,6 @@ public readonly struct ContentIndices(int index, int contentIndex) : IComparable
 
     public int ContentIndex => contentIndex;
 
-    public int CompareTo(object? obj)
-    {
-        if (obj is ContentIndices contentIndices)
-        {
-            return contentIndex.CompareTo(contentIndices.contentIndex);
-        }
-
-        throw new ArgumentException();
-    }
+    public int CompareTo(ContentIndices contentIndices) =>
+        contentIndex.CompareTo(contentIndices.contentIndex);
 }

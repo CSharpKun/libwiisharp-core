@@ -17,7 +17,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.ComponentModel;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -163,7 +162,7 @@ public class IosPatcher(ILogger<IosPatcher>? logger = null)
             {
                 if (_logger.IsEnabled(LogLevel.Debug))
                     _logger.LogDebug(
-                        "   Patching at Offset: 0x{0}",
+                        "   Patching at Offset: 0x{Offset}",
                         firstIndex.ToString("x8").ToUpper()
                     );
                 esModule[firstIndex + 2] = 0;
@@ -174,8 +173,8 @@ public class IosPatcher(ILogger<IosPatcher>? logger = null)
         }
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug(
-                "Patching ES_Identify Finished... (Patches applied: {0})",
-                (object)num
+                "Patching ES_Identify Finished... (Patches applied: {PatchesCount})",
+                num
             );
         return num;
     }
@@ -275,7 +274,7 @@ public class IosPatcher(ILogger<IosPatcher>? logger = null)
             {
                 if (_logger.IsEnabled(LogLevel.Debug))
                     _logger.LogDebug(
-                        "Patching NAND Permissions at Offset: 0x{0}",
+                        "Patching NAND Permissions at Offset: 0x{Offset}",
                         firstIndex.ToString("x8").ToUpper()
                     );
                 esModule[firstIndex + 2] = 224;
@@ -286,7 +285,7 @@ public class IosPatcher(ILogger<IosPatcher>? logger = null)
             {
                 if (_logger.IsEnabled(LogLevel.Debug))
                     _logger.LogDebug(
-                        "Patching VP at Offset: 0x{0}",
+                        "Patching VP at Offset: 0x{Offset}",
                         firstIndex.ToString("x8").ToUpper()
                     );
                 esModule[firstIndex] = 224;

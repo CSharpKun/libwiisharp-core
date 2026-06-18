@@ -1,0 +1,3 @@
+[*.cs]
+csharp_namespace_preferences = file_scoped:true
+dotnet_diagnostic.CA1873.severity = none

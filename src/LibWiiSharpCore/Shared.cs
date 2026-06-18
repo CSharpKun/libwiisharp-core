@@ -20,191 +20,187 @@
 using System.Globalization;
 using System.Net;
 
-namespace LibWiiSharpCore
+namespace LibWiiSharpCore;
+
+public static class Shared
 {
-    public static class Shared
+    public static string[] MergeStringArrays(string[] a, string[] b)
     {
-        public static string[] MergeStringArrays(string[] a, string[] b)
+        List<string> stringList = new List<string>(a);
+        foreach (string str in b)
         {
-            List<string> stringList = new List<string>(a);
-            foreach (string str in b)
+            if (!stringList.Contains(str))
             {
-                if (!stringList.Contains(str))
-                {
-                    stringList.Add(str);
-                }
+                stringList.Add(str);
             }
-            stringList.Sort();
-            return stringList.ToArray();
+        }
+        stringList.Sort();
+        return stringList.ToArray();
+    }
+
+    public static bool CompareByteArrays(
+        byte[] first,
+        int firstIndex,
+        byte[] second,
+        int secondIndex,
+        int length
+    )
+    {
+        if (first.Length < length || second.Length < length)
+        {
+            return false;
         }
 
-        public static bool CompareByteArrays(
-            byte[] first,
-            int firstIndex,
-            byte[] second,
-            int secondIndex,
-            int length
-        )
+        for (int index = 0; index < length; ++index)
         {
-            if (first.Length < length || second.Length < length)
-            {
-                return false;
-            }
-
-            for (int index = 0; index < length; ++index)
-            {
-                if (first[firstIndex + index] != second[secondIndex + index])
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        public static bool CompareByteArrays(byte[] first, byte[] second)
-        {
-            if (first.Length != second.Length)
+            if (first[firstIndex + index] != second[secondIndex + index])
             {
                 return false;
             }
+        }
+        return true;
+    }
 
-            for (int index = 0; index < first.Length; ++index)
+    public static bool CompareByteArrays(byte[] first, byte[] second)
+    {
+        if (first.Length != second.Length)
+        {
+            return false;
+        }
+
+        for (int index = 0; index < first.Length; ++index)
+        {
+            if (first[index] != second[index])
             {
-                if (first[index] != second[index])
-                {
-                    return false;
-                }
+                return false;
             }
-            return true;
+        }
+        return true;
+    }
+
+    public static string ByteArrayToString(byte[] byteArray, char separator = ' ')
+    {
+        string str = string.Empty;
+        foreach (byte num in byteArray)
+        {
+            str = str + num.ToString("x2").ToUpper() + separator.ToString();
         }
 
-        public static string ByteArrayToString(byte[] byteArray, char separator = ' ')
+        return str.Remove(str.Length - 1);
+    }
+
+    public static byte[] HexStringToByteArray(string hexString)
+    {
+        byte[] numArray = new byte[hexString.Length / 2];
+        for (int index = 0; index < hexString.Length / 2; ++index)
         {
-            string str = string.Empty;
-            foreach (byte num in byteArray)
+            numArray[index] = byte.Parse(hexString.Substring(index * 2, 2), NumberStyles.HexNumber);
+        }
+
+        return numArray;
+    }
+
+    public static int CountCharsInString(string theString, char theChar)
+    {
+        int num1 = 0;
+        foreach (int num2 in theString)
+        {
+            if (num2 == theChar)
             {
-                str = str + num.ToString("x2").ToUpper() + separator.ToString();
+                ++num1;
             }
-
-            return str.Remove(str.Length - 1);
         }
+        return num1;
+    }
 
-        public static byte[] HexStringToByteArray(string hexString)
+    public static long AddPadding(long value)
+    {
+        return AddPadding(value, 64);
+    }
+
+    public static long AddPadding(long value, int padding)
+    {
+        if (value % padding != 0L)
         {
-            byte[] numArray = new byte[hexString.Length / 2];
-            for (int index = 0; index < hexString.Length / 2; ++index)
-            {
-                numArray[index] = byte.Parse(
-                    hexString.Substring(index * 2, 2),
-                    NumberStyles.HexNumber
-                );
-            }
-
-            return numArray;
+            value += padding - value % padding;
         }
 
-        public static int CountCharsInString(string theString, char theChar)
+        return value;
+    }
+
+    public static int AddPadding(int value)
+    {
+        return AddPadding(value, 64);
+    }
+
+    public static int AddPadding(int value, int padding)
+    {
+        if (value % padding != 0)
         {
-            int num1 = 0;
-            foreach (int num2 in theString)
-            {
-                if (num2 == theChar)
-                {
-                    ++num1;
-                }
-            }
-            return num1;
+            value += padding - value % padding;
         }
 
-        public static long AddPadding(long value)
+        return value;
+    }
+
+    public static ushort Swap(ushort value)
+    {
+        return (ushort)IPAddress.HostToNetworkOrder((short)value);
+    }
+
+    public static uint Swap(uint value)
+    {
+        return (uint)IPAddress.HostToNetworkOrder((int)value);
+    }
+
+    public static ulong Swap(ulong value)
+    {
+        return (ulong)IPAddress.HostToNetworkOrder((long)value);
+    }
+
+    public static byte[] UShortArrayToByteArray(ushort[] array)
+    {
+        List<byte> byteList = new List<byte>();
+        foreach (ushort num in array)
         {
-            return AddPadding(value, 64);
+            byte[] bytes = BitConverter.GetBytes(num);
+            byteList.AddRange(bytes);
         }
+        return byteList.ToArray();
+    }
 
-        public static long AddPadding(long value, int padding)
+    public static byte[] UIntArrayToByteArray(uint[] array)
+    {
+        List<byte> byteList = new List<byte>();
+        foreach (uint num in array)
         {
-            if (value % padding != 0L)
-            {
-                value += padding - value % padding;
-            }
-
-            return value;
+            byte[] bytes = BitConverter.GetBytes(num);
+            byteList.AddRange(bytes);
         }
+        return byteList.ToArray();
+    }
 
-        public static int AddPadding(int value)
+    public static uint[] ByteArrayToUIntArray(byte[] array)
+    {
+        uint[] numArray = new uint[array.Length / 4];
+        int num = 0;
+        for (int startIndex = 0; startIndex < array.Length; startIndex += 4)
         {
-            return AddPadding(value, 64);
+            numArray[num++] = BitConverter.ToUInt32(array, startIndex);
         }
 
-        public static int AddPadding(int value, int padding)
+        return numArray;
+    }
+
+    public static ushort[] ByteArrayToUShortArray(byte[] array)
+    {
+        ushort[] numArray = new ushort[array.Length / 2];
+        int num = 0;
+        for (int startIndex = 0; startIndex < array.Length; startIndex += 2)
         {
-            if (value % padding != 0)
-            {
-                value += padding - value % padding;
-            }
-
-            return value;
+            numArray[num++] = BitConverter.ToUInt16(array, startIndex);
         }
 
-        public static ushort Swap(ushort value)
-        {
-            return (ushort)IPAddress.HostToNetworkOrder((short)value);
-        }
-
-        public static uint Swap(uint value)
-        {
-            return (uint)IPAddress.HostToNetworkOrder((int)value);
-        }
-
-        public static ulong Swap(ulong value)
-        {
-            return (ulong)IPAddress.HostToNetworkOrder((long)value);
-        }
-
-        public static byte[] UShortArrayToByteArray(ushort[] array)
-        {
-            List<byte> byteList = new List<byte>();
-            foreach (ushort num in array)
-            {
-                byte[] bytes = BitConverter.GetBytes(num);
-                byteList.AddRange(bytes);
-            }
-            return byteList.ToArray();
-        }
-
-        public static byte[] UIntArrayToByteArray(uint[] array)
-        {
-            List<byte> byteList = new List<byte>();
-            foreach (uint num in array)
-            {
-                byte[] bytes = BitConverter.GetBytes(num);
-                byteList.AddRange(bytes);
-            }
-            return byteList.ToArray();
-        }
-
-        public static uint[] ByteArrayToUIntArray(byte[] array)
-        {
-            uint[] numArray = new uint[array.Length / 4];
-            int num = 0;
-            for (int startIndex = 0; startIndex < array.Length; startIndex += 4)
-            {
-                numArray[num++] = BitConverter.ToUInt32(array, startIndex);
-            }
-
-            return numArray;
-        }
-
-        public static ushort[] ByteArrayToUShortArray(byte[] array)
-        {
-            ushort[] numArray = new ushort[array.Length / 2];
-            int num = 0;
-            for (int startIndex = 0; startIndex < array.Length; startIndex += 2)
-            {
-                numArray[num++] = BitConverter.ToUInt16(array, startIndex);
-            }
-
-            return numArray;
-        }
+        return numArray;
     }
 }

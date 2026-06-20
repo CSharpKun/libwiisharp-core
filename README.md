@@ -20,4 +20,4 @@ From the original libWiiSharp:
 - SquidMan for Zetsubou
 - Arikado and Lunatik for Dop-Mii
 - Andre Perrot for gbalzss
-- Leathl as the original creator of LibWiiSharpCore
+- Leathl as the original creator of libWiiSharp

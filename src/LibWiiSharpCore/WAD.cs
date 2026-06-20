@@ -20,6 +20,8 @@
 using System.ComponentModel;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace LibWiiSharpCore;
 
@@ -33,9 +35,10 @@ public enum LowerTitleID : uint
     HiddenChannels = 0x00010008,
 }
 
-public class WAD : IDisposable
+public class WAD(ILogger<WAD>? logger = null)
 {
-    private readonly SHA1 sha = SHA1.Create();
+    private readonly ILogger<WAD> _logger = logger ?? NullLogger<WAD>.Instance;
+
     private bool lz77CompressBannerAndIcon = true;
     private bool lz77DecompressBannerAndIcon;
     private WAD_Header wadHeader;
@@ -44,7 +47,6 @@ public class WAD : IDisposable
     private TMD tmd = new();
     private List<byte[]> contents;
     private byte[] footer = [];
-    private bool isDisposed;
 
     public Region Region
     {
@@ -54,7 +56,8 @@ public class WAD : IDisposable
 
     public int NumOfContents => tmd.NumOfContents;
 
-    public byte[][] Contents => [.. contents];
+    public byte[][] Contents =>
+        [.. contents ?? throw new NullReferenceException("Contents of WAD are null.")];
 
     public bool FakeSign
     {
@@ -154,38 +157,6 @@ public class WAD : IDisposable
     {
         get => tmd.SortContents;
         set => tmd.SortContents = value;
-    }
-
-    public event EventHandler<ProgressChangedEventArgs> Progress;
-
-    public event EventHandler<MessageEventArgs> Warning;
-
-    public event EventHandler<MessageEventArgs> Debug;
-
-    public WAD()
-    {
-        cert.Debug += new EventHandler<MessageEventArgs>(Cert_Debug);
-        tik.Debug += new EventHandler<MessageEventArgs>(Tik_Debug);
-        tmd.Debug += new EventHandler<MessageEventArgs>(Tmd_Debug);
-        BannerApp.Debug += new EventHandler<MessageEventArgs>(BannerApp_Debug);
-        BannerApp.Warning += new EventHandler<MessageEventArgs>(BannerApp_Warning);
-    }
-
-    ~WAD() => Dispose(false);
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (disposing && !isDisposed) { }
-        sha.Dispose();
-        cert.Dispose();
-        contents.Clear();
-        isDisposed = true;
     }
 
     public static WAD Load(string pathToWad)
@@ -683,7 +654,7 @@ public class WAD : IDisposable
                 Index = (ushort)index,
                 Type = type,
                 Size = (ulong)newContent.Length,
-                Hash = sha.ComputeHash(newContent),
+                Hash = SHA1.HashData(newContent),
             }
         );
         contents.Add(newContent);
@@ -778,10 +749,10 @@ public class WAD : IDisposable
 
     private void WriteToStream(Stream writeStream)
     {
-        FireDebug("Writing Wad...");
+        _logger.LogDebug("Writing Wad...");
         if (!KeepOriginalFooter)
         {
-            FireDebug("   Building Footer Timestamp...");
+            _logger.LogDebug("Building Footer Timestamp...");
             CreateFooterTimestamp();
         }
         if (HasBanner)
@@ -804,10 +775,7 @@ public class WAD : IDisposable
                             && lz77CompressBannerAndIcon
                         )
                         {
-                            FireDebug(
-                                "   Compressing {0}...",
-                                (object)BannerApp.StringTable[index]
-                            );
+                            _logger.LogDebug("Compressing {Data}...", BannerApp.StringTable[index]);
                             byte[] file = new byte[BannerApp.Data[index].Length - 32];
                             Array.Copy(BannerApp.Data[index], 32, file, 0, file.Length);
                             byte[] numArray = Headers.IMD5.AddHeader(new Lz77().Compress(file));
@@ -819,9 +787,9 @@ public class WAD : IDisposable
                             && lz77DecompressBannerAndIcon
                         )
                         {
-                            FireDebug(
-                                "   Decompressing {0}...",
-                                (object)BannerApp.StringTable[index]
+                            _logger.LogDebug(
+                                "Decompressing {Data}...",
+                                BannerApp.StringTable[index]
                             );
                             byte[] file = new byte[BannerApp.Data[index].Length - 32];
                             Array.Copy(BannerApp.Data[index], 32, file, 0, file.Length);
@@ -836,13 +804,13 @@ public class WAD : IDisposable
             {
                 if (tmd.Contents[index].Index == 0)
                 {
-                    FireDebug("   Saving Banner App...");
+                    _logger.LogDebug("Saving Banner App...");
                     contents[index] = BannerApp.ToByteArray();
                     break;
                 }
             }
         }
-        FireDebug("   Updating Header...");
+        _logger.LogDebug("Updating Header...");
         int num = 0;
         for (int index = 0; index < contents.Count - 1; ++index)
         {
@@ -851,31 +819,31 @@ public class WAD : IDisposable
 
         wadHeader.ContentSize = (uint)(num + contents[^1].Length);
         wadHeader.TmdSize = (uint)(484 + tmd.NumOfContents * 36);
-        FireDebug("   Updating TMD Contents...");
+        _logger.LogDebug("Updating TMD Contents...");
         tmd.UpdateContents([.. contents]);
-        FireDebug(
-            "   Writing Wad Header... (Offset: 0x{0})",
-            (object)writeStream.Position.ToString("x8").ToUpper()
+        _logger.LogDebug(
+            "Writing Wad Header... (Offset: 0x{})",
+            writeStream.Position.ToString("x8").ToUpper()
         );
         writeStream.Seek(0L, SeekOrigin.Begin);
         wadHeader.Write(writeStream);
-        FireDebug(
-            "   Writing Certificate Chain... (Offset: 0x{0})",
-            (object)writeStream.Position.ToString("x8").ToUpper()
+        _logger.LogDebug(
+            "Writing Certificate Chain... (Offset: 0x{})",
+            writeStream.Position.ToString("x8").ToUpper()
         );
         writeStream.Seek(Shared.AddPadding((int)writeStream.Position), SeekOrigin.Begin);
         byte[] byteArray1 = cert.ToByteArray();
         writeStream.Write(byteArray1, 0, byteArray1.Length);
-        FireDebug(
-            "   Writing Ticket... (Offset: 0x{0})",
-            (object)writeStream.Position.ToString("x8").ToUpper()
+        _logger.LogDebug(
+            "Writing Ticket... (Offset: 0x{})",
+            writeStream.Position.ToString("x8").ToUpper()
         );
         writeStream.Seek(Shared.AddPadding((int)writeStream.Position), SeekOrigin.Begin);
         byte[] byteArray2 = tik.ToByteArray();
         writeStream.Write(byteArray2, 0, byteArray2.Length);
-        FireDebug(
-            "   Writing TMD... (Offset: 0x{0})",
-            (object)writeStream.Position.ToString("x8").ToUpper()
+        _logger.LogDebug(
+            "Writing TMD... (Offset: 0x{})",
+            writeStream.Position.ToString("x8").ToUpper()
         );
         writeStream.Seek(Shared.AddPadding((int)writeStream.Position), SeekOrigin.Begin);
         byte[] byteArray3 = tmd.ToByteArray();
@@ -884,33 +852,33 @@ public class WAD : IDisposable
         for (int index = 0; index < sortedContentList.Length; ++index)
         {
             writeStream.Seek(Shared.AddPadding((int)writeStream.Position), SeekOrigin.Begin);
-            FireProgress((index + 1) * 100 / contents.Count);
-            FireDebug(
-                "   Writing Content #{1} of {2}... (Offset: 0x{0})",
+
+            _logger.LogDebug(
+                "Writing Content #{Current} of {All}... (Offset: 0x{})",
                 writeStream.Position.ToString("x8").ToUpper(),
                 index + 1,
                 contents.Count
             );
-            FireDebug(
-                "    -> Content ID: 0x{0}",
-                (object)tmd.Contents[sortedContentList[index].Index].ContentID.ToString("x8")
+            _logger.LogDebug(
+                " -> Content ID: 0x{}",
+                tmd.Contents[sortedContentList[index].Index].ContentID.ToString("x8")
             );
-            FireDebug(
-                "    -> Index: 0x{0}",
-                (object)tmd.Contents[sortedContentList[index].Index].Index.ToString("x4")
+            _logger.LogDebug(
+                " -> Index: 0x{}",
+                tmd.Contents[sortedContentList[index].Index].Index.ToString("x4")
             );
-            FireDebug(
-                "    -> Type: 0x{0} ({1})",
+            _logger.LogDebug(
+                " -> Type: 0x{} ({ContentType})",
                 ((ushort)tmd.Contents[sortedContentList[index].Index].Type).ToString("x4"),
                 tmd.Contents[sortedContentList[index].Index].Type.ToString()
             );
-            FireDebug(
-                "    -> Size: {0} bytes",
-                (object)tmd.Contents[sortedContentList[index].Index].Size
+            _logger.LogDebug(
+                " -> Size: {SizeCount} bytes",
+                tmd.Contents[sortedContentList[index].Index].Size
             );
-            FireDebug(
-                "    -> Hash: {0}",
-                (object)Shared.ByteArrayToString(tmd.Contents[sortedContentList[index].Index].Hash)
+            _logger.LogDebug(
+                " -> Hash: {Hash}",
+                Shared.ByteArrayToString(tmd.Contents[sortedContentList[index].Index].Hash)
             );
             byte[] buffer = EncryptContent(
                 contents[sortedContentList[index].Index],
@@ -920,9 +888,9 @@ public class WAD : IDisposable
         }
         if (wadHeader.FooterSize != 0U)
         {
-            FireDebug(
-                "   Writing Footer... (Offset: 0x{0})",
-                (object)writeStream.Position.ToString("x8").ToUpper()
+            _logger.LogDebug(
+                "Writing Footer... (Offset: 0x{})",
+                writeStream.Position.ToString("x8").ToUpper()
             );
             writeStream.Seek(Shared.AddPadding((int)writeStream.Position), SeekOrigin.Begin);
             writeStream.Write(footer, 0, footer.Length);
@@ -932,19 +900,22 @@ public class WAD : IDisposable
             writeStream.WriteByte(0);
         }
 
-        FireDebug("Writing Wad Finished... (Written Bytes: {0})", (object)writeStream.Position);
+        _logger.LogDebug(
+            "Writing Wad Finished... (Written Bytes: {BytesCount})",
+            writeStream.Position
+        );
     }
 
     private void UnpackAll(string unpackDir, bool nameContentId)
     {
-        FireDebug("Unpacking Wad to: {0}", (object)unpackDir);
+        _logger.LogDebug("Unpacking Wad to: {Folder}", unpackDir);
         if (!Directory.Exists(unpackDir))
         {
             Directory.CreateDirectory(unpackDir);
         }
 
         string str1 = this.tik.TitleID.ToString("x16");
-        FireDebug("   Saving Certificate Chain: {0}.cert", (object)str1);
+        _logger.LogDebug("Saving Certificate Chain: {Name}.cert", str1);
         CertificateChain cert = this.cert;
         string str2 = unpackDir;
         char directorySeparatorChar = Path.DirectorySeparatorChar;
@@ -952,7 +923,7 @@ public class WAD : IDisposable
         string str4 = str1;
         string savePath1 = str2 + str3 + str4 + ".cert";
         cert.Save(savePath1);
-        FireDebug("   Saving Ticket: {0}.tik", (object)str1);
+        _logger.LogDebug("Saving Ticket: {File}.tik", str1);
         Ticket tik = this.tik;
         string str5 = unpackDir;
         directorySeparatorChar = Path.DirectorySeparatorChar;
@@ -960,7 +931,7 @@ public class WAD : IDisposable
         string str7 = str1;
         string savePath2 = str5 + str6 + str7 + ".tik";
         tik.Save(savePath2);
-        FireDebug("   Saving TMD: {0}.tmd", (object)str1);
+        _logger.LogDebug("Saving TMD: {File}.tmd", str1);
         TMD tmd = this.tmd;
         string str8 = unpackDir;
         directorySeparatorChar = Path.DirectorySeparatorChar;
@@ -970,29 +941,28 @@ public class WAD : IDisposable
         tmd.Save(savePath3);
         for (int index = 0; index < this.tmd.NumOfContents; ++index)
         {
-            FireProgress((index + 1) * 100 / this.tmd.NumOfContents);
-            FireDebug(
-                "   Saving Content #{0} of {1}: {2}.app",
+            _logger.LogDebug(
+                "Saving Content #{Current} of {All}: {ContentId}.app",
                 index + 1,
                 this.tmd.NumOfContents,
                 nameContentId
                     ? this.tmd.Contents[index].ContentID.ToString("x8")
                     : this.tmd.Contents[index].Index.ToString("x8")
             );
-            FireDebug(
-                "    -> Content ID: 0x{0}",
-                (object)this.tmd.Contents[index].ContentID.ToString("x8")
+            _logger.LogDebug(
+                " -> Content ID: 0x{}",
+                this.tmd.Contents[index].ContentID.ToString("x8")
             );
-            FireDebug("    -> Index: 0x{0}", (object)this.tmd.Contents[index].Index.ToString("x4"));
+            _logger.LogDebug(" -> Index: 0x{}", this.tmd.Contents[index].Index.ToString("x4"));
             object[] objArray = new object[2];
             ushort num = (ushort)this.tmd.Contents[index].Type;
             objArray[0] = num.ToString("x4");
             objArray[1] = this.tmd.Contents[index].Type.ToString();
-            FireDebug("    -> Type: 0x{0} ({1})", objArray);
-            FireDebug("    -> Size: {0} bytes", (object)this.tmd.Contents[index].Size);
-            FireDebug(
-                "    -> Hash: {0}",
-                (object)Shared.ByteArrayToString(this.tmd.Contents[index].Hash)
+            _logger.LogDebug(" -> Type: 0x{} ({ContentType})", objArray);
+            _logger.LogDebug(" -> Size: {BytesCount} bytes", this.tmd.Contents[index].Size);
+            _logger.LogDebug(
+                " -> Hash: {Hash}",
+                Shared.ByteArrayToString(this.tmd.Contents[index].Hash)
             );
             string str11 = unpackDir;
             directorySeparatorChar = Path.DirectorySeparatorChar;
@@ -1011,7 +981,7 @@ public class WAD : IDisposable
             using FileStream fileStream = new(str11 + str12 + str13 + ".app", FileMode.Create);
             fileStream.Write(contents[index], 0, contents[index].Length);
         }
-        FireDebug("   Saving Footer: {0}.footer", (object)str1);
+        _logger.LogDebug("Saving Footer: {File}.footer", str1);
         string str14 = unpackDir;
         directorySeparatorChar = Path.DirectorySeparatorChar;
         string str15 = directorySeparatorChar.ToString();
@@ -1021,19 +991,19 @@ public class WAD : IDisposable
             fileStream.Write(footer, 0, footer.Length);
         }
 
-        FireDebug("Unpacking Wad Finished...");
+        _logger.LogDebug("Unpacking Wad Finished...");
     }
 
     private void ParseWad(Stream wadFile)
     {
-        FireDebug("Parsing Wad...");
+        _logger.LogDebug("Parsing Wad...");
         wadFile.Seek(0L, SeekOrigin.Begin);
         byte[] buffer = new byte[4];
         wadHeader = new();
         contents = [];
-        FireDebug(
-            "   Parsing Header... (Offset: 0x{0})",
-            (object)wadFile.Position.ToString("x8").ToUpper()
+        _logger.LogDebug(
+            "Parsing Header... (Offset: 0x{})",
+            wadFile.Position.ToString("x8").ToUpper()
         );
         wadFile.ReadExactly(buffer);
         if ((int)Shared.Swap(BitConverter.ToUInt32(buffer, 0)) != (int)wadHeader.HeaderSize)
@@ -1050,25 +1020,25 @@ public class WAD : IDisposable
         wadHeader.ContentSize = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
         wadFile.ReadExactly(buffer);
         wadHeader.FooterSize = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
-        FireDebug(
-            "   Parsing Certificate Chain... (Offset: 0x{0})",
-            (object)wadFile.Position.ToString("x8").ToUpper()
+        _logger.LogDebug(
+            "Parsing Certificate Chain... (Offset: 0x{})",
+            wadFile.Position.ToString("x8").ToUpper()
         );
         wadFile.Seek(Shared.AddPadding((int)wadFile.Position), SeekOrigin.Begin);
         byte[] numArray1 = new byte[(int)wadHeader.CertSize];
         wadFile.ReadExactly(numArray1);
         cert.LoadFile(numArray1);
-        FireDebug(
-            "   Parsing Ticket... (Offset: 0x{0})",
-            (object)wadFile.Position.ToString("x8").ToUpper()
+        _logger.LogDebug(
+            "Parsing Ticket... (Offset: 0x{})",
+            wadFile.Position.ToString("x8").ToUpper()
         );
         wadFile.Seek(Shared.AddPadding((int)wadFile.Position), SeekOrigin.Begin);
         byte[] numArray2 = new byte[(int)wadHeader.TicketSize];
         wadFile.ReadExactly(numArray2);
         tik.LoadFile(numArray2);
-        FireDebug(
-            "   Parsing TMD... (Offset: 0x{0})",
-            (object)wadFile.Position.ToString("x8").ToUpper()
+        _logger.LogDebug(
+            "Parsing TMD... (Offset: 0x{})",
+            wadFile.Position.ToString("x8").ToUpper()
         );
         wadFile.Seek(Shared.AddPadding((int)wadFile.Position), SeekOrigin.Begin);
         byte[] numArray3 = new byte[(int)wadHeader.TmdSize];
@@ -1076,34 +1046,33 @@ public class WAD : IDisposable
         tmd.LoadFile(numArray3);
         if ((long)tmd.TitleID != (long)tik.TitleID)
         {
-            FireWarning("The Title ID in the Ticket doesn't match the one in the TMD!");
+            _logger.LogWarning("The Title ID in the Ticket doesn't match the one in the TMD!");
         }
 
         long position;
         for (int contentIndex = 0; contentIndex < tmd.NumOfContents; ++contentIndex)
         {
-            FireProgress((contentIndex + 1) * 100 / tmd.NumOfContents);
             object?[] objArray1 = [contentIndex + 1, tmd.NumOfContents, null];
             position = wadFile.Position;
             objArray1[2] = position.ToString("x8").ToUpper();
-            FireDebug("   Reading Content #{0} of {1}... (Offset: 0x{2})", objArray1);
-            FireDebug(
-                "    -> Content ID: 0x{0}",
-                (object)tmd.Contents[contentIndex].ContentID.ToString("x8")
+            _logger.LogDebug("Reading Content #{Current} of {All}... (Offset: 0x{})", objArray1);
+            _logger.LogDebug(
+                " -> Content ID: 0x{}",
+                tmd.Contents[contentIndex].ContentID.ToString("x8")
             );
             object[] objArray2 = new object[1];
             ushort num = tmd.Contents[contentIndex].Index;
             objArray2[0] = num.ToString("x4");
-            FireDebug("    -> Index: 0x{0}", objArray2);
+            _logger.LogDebug(" -> Index: 0x{}", objArray2);
             object[] objArray3 = new object[2];
             num = (ushort)tmd.Contents[contentIndex].Type;
             objArray3[0] = num.ToString("x4");
             objArray3[1] = tmd.Contents[contentIndex].Type.ToString();
-            FireDebug("    -> Type: 0x{0} ({1})", objArray3);
-            FireDebug("    -> Size: {0} bytes", (object)tmd.Contents[contentIndex].Size);
-            FireDebug(
-                "    -> Hash: {0}",
-                (object)Shared.ByteArrayToString(tmd.Contents[contentIndex].Hash)
+            _logger.LogDebug(" -> Type: 0x{} ({ContentType})", objArray3);
+            _logger.LogDebug(" -> Size: {BytesCount} bytes", tmd.Contents[contentIndex].Size);
+            _logger.LogDebug(
+                " -> Hash: {Hash}",
+                Shared.ByteArrayToString(tmd.Contents[contentIndex].Hash)
             );
             wadFile.Seek(Shared.AddPadding((int)wadFile.Position), SeekOrigin.Begin);
             byte[] numArray4 = new byte[
@@ -1112,26 +1081,19 @@ public class WAD : IDisposable
             wadFile.ReadExactly(numArray4);
             byte[] array = DecryptContent(numArray4, contentIndex);
             Array.Resize<byte>(ref array, (int)tmd.Contents[contentIndex].Size);
-            if (
-                !Shared.CompareByteArrays(
-                    tmd.Contents[contentIndex].Hash,
-                    sha.ComputeHash(array, 0, (int)tmd.Contents[contentIndex].Size)
-                )
-            )
+            if (!Shared.CompareByteArrays(tmd.Contents[contentIndex].Hash, SHA1.HashData(array)))
             {
-                FireDebug("/!\\ /!\\ /!\\ Hashes do not match /!\\ /!\\ /!\\");
+                _logger.LogDebug("/!\\ /!\\ /!\\ Hashes do not match /!\\ /!\\ /!\\");
                 // ISSUE: variable of a boxed type
                 int local = contentIndex + 1;
                 string str1 = tmd.Contents[contentIndex].ContentID.ToString("x8");
                 num = tmd.Contents[contentIndex].Index;
                 string str2 = num.ToString("x4");
-                FireWarning(
-                    string.Format(
-                        "Content #{0} (Content ID: 0x{1}; Index: 0x{2}): Hashes do not match! The content might be corrupted!",
-                        local,
-                        str1,
-                        str2
-                    )
+                _logger.LogWarning(
+                    "Content #{Current} (Content ID: 0x{}; Index: 0x{}): Hashes do not match! The content might be corrupted!",
+                    local,
+                    str1,
+                    str2
                 );
             }
             contents.Add(array);
@@ -1153,13 +1115,13 @@ public class WAD : IDisposable
             object[] objArray = new object[1];
             position = wadFile.Position;
             objArray[0] = position.ToString("x8").ToUpper();
-            FireDebug("   Reading Footer... (Offset: 0x{0})", objArray);
+            _logger.LogDebug("Reading Footer... (Offset: 0x{})", objArray);
             footer = new byte[(int)wadHeader.FooterSize];
             wadFile.Seek(Shared.AddPadding((int)wadFile.Position), SeekOrigin.Begin);
             wadFile.ReadExactly(footer);
             ParseFooterTimestamp();
         }
-        FireDebug("Parsing Wad Finished...");
+        _logger.LogDebug("Parsing Wad Finished...");
     }
 
     private byte[] DecryptContent(byte[] content, int contentIndex)
@@ -1256,64 +1218,6 @@ public class WAD : IDisposable
         }
 
         CreationTimeUTC = CreationTimeUTC.AddSeconds(num);
-    }
-
-    private void FireDebug(string debugMessage, params object[] args)
-    {
-        EventHandler<MessageEventArgs> debug = Debug;
-        if (debug == null)
-        {
-            return;
-        }
-
-        debug(new object(), new MessageEventArgs(string.Format(debugMessage, args)));
-    }
-
-    private void FireWarning(string warningMessage)
-    {
-        EventHandler<MessageEventArgs> warning = Warning;
-        if (warning == null)
-        {
-            return;
-        }
-
-        warning(new object(), new MessageEventArgs(warningMessage));
-    }
-
-    private void FireProgress(int progressPercentage)
-    {
-        EventHandler<ProgressChangedEventArgs> progress = Progress;
-        if (progress == null)
-        {
-            return;
-        }
-
-        progress(new object(), new ProgressChangedEventArgs(progressPercentage, string.Empty));
-    }
-
-    private void Cert_Debug(object sender, MessageEventArgs e)
-    {
-        FireDebug("      Certificate Chain: {0}", (object)e.Message);
-    }
-
-    private void Tik_Debug(object sender, MessageEventArgs e)
-    {
-        FireDebug("      Ticket: {0}", (object)e.Message);
-    }
-
-    private void Tmd_Debug(object sender, MessageEventArgs e)
-    {
-        FireDebug("      TMD: {0}", (object)e.Message);
-    }
-
-    private void BannerApp_Debug(object sender, MessageEventArgs e)
-    {
-        FireDebug("      BannerApp: {0}", (object)e.Message);
-    }
-
-    private void BannerApp_Warning(object sender, MessageEventArgs e)
-    {
-        FireWarning(e.Message);
     }
 }
 

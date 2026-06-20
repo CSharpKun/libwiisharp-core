@@ -45,12 +45,16 @@ public enum Protocol
 /// <summary>
 /// The HbcTransmitter can easily transmit files to the Homebrew Channel.
 /// </summary>
-public class HbcTransmitter
+public class HbcTransmitter(
+    Protocol protocol,
+    string ipAddress,
+    ILogger<HbcTransmitter>? logger = null
+)
 {
-    private readonly ILogger<HbcTransmitter> _logger;
+    private readonly ILogger<HbcTransmitter> _logger =
+        logger ?? NullLogger<HbcTransmitter>.Instance;
 
-    private bool compress;
-    private readonly Protocol protocol;
+    private bool compress = protocol == Protocol.JODI;
 
     /// <summary>
     /// The size of the buffer that is used to transmit the data.
@@ -66,7 +70,7 @@ public class HbcTransmitter
     /// <summary>
     /// The minor version of wiiload. You might need to change it for upcoming releases of the HBC.
     /// </summary>
-    public int WiiloadVersionMinor { get; set; } = 5;
+    public int WiiloadVersionMinor { get; set; } = protocol == Protocol.HAXX ? 4 : 5;
 
     /// <summary>
     /// If true, the data will be compressed before being transmitted. NOT available for Protocol.HAXX!
@@ -88,7 +92,7 @@ public class HbcTransmitter
     /// <summary>
     /// The IP address of the Wii.
     /// </summary>
-    public string IpAddress { get; set; }
+    public string IpAddress { get; set; } = ipAddress;
 
     /// The port used for the transmission.
     /// You don't need to touch this unless the port changes in future releases of the HBC.
@@ -105,19 +109,6 @@ public class HbcTransmitter
     /// Will be 0 if the data wasn't compressed.
     /// </summary>
     public int CompressionRatio { get; private set; }
-
-    public HbcTransmitter(
-        Protocol protocol,
-        string ipAddress,
-        ILogger<HbcTransmitter>? logger = null
-    )
-    {
-        _logger = logger ?? NullLogger<HbcTransmitter>.Instance;
-        this.protocol = protocol;
-        IpAddress = ipAddress;
-        WiiloadVersionMinor = protocol == Protocol.HAXX ? 4 : 5;
-        compress = protocol == Protocol.JODI;
-    }
 
     public void TransmitFile(string pathToFile)
     {
@@ -154,7 +145,7 @@ public class HbcTransmitter
         else
         {
             buffer2 = fileData;
-            fileData = new byte[0];
+            fileData = [];
         }
         _logger.LogDebug("   Sending Filesize...");
         buffer1[0] = (byte)(buffer2.Length >> 24 & byte.MaxValue);

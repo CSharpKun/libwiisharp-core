@@ -283,12 +283,12 @@ public class Ticket(ILogger<Ticket>? logger = null)
         _logger.LogDebug("   Encrypting Title Key...");
         PrivEncryptTitleKey();
         _logger.LogDebug(
-            "    -> Decrypted Title Key: {0}",
-            (object)Shared.ByteArrayToString(decryptedTitleKey)
+            "    -> Decrypted Title Key: {Key}",
+            Shared.ByteArrayToString(decryptedTitleKey)
         );
         _logger.LogDebug(
-            "    -> Encrypted Title Key: {0}",
-            (object)Shared.ByteArrayToString(encryptedTitleKey)
+            "    -> Encrypted Title Key: {Key}",
+            Shared.ByteArrayToString(encryptedTitleKey)
         );
         if (fakeSign)
         {
@@ -298,109 +298,109 @@ public class Ticket(ILogger<Ticket>? logger = null)
         MemoryStream memoryStream = new();
         memoryStream.Seek(0L, SeekOrigin.Begin);
         _logger.LogDebug(
-            "   Writing Signature Exponent... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Signature Exponent... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(BitConverter.GetBytes(Shared.Swap(signatureExponent)), 0, 4);
         _logger.LogDebug(
-            "   Writing Signature... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Signature... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(signature, 0, signature.Length);
         _logger.LogDebug(
-            "   Writing Padding... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Padding... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(padding, 0, padding.Length);
         _logger.LogDebug(
-            "   Writing Issuer... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Issuer... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(issuer, 0, issuer.Length);
         _logger.LogDebug(
-            "   Writing Unknown... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Unknown... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(unknown, 0, unknown.Length);
         _logger.LogDebug(
-            "   Writing Title Key... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Title Key... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(encryptedTitleKey, 0, encryptedTitleKey.Length);
         _logger.LogDebug(
-            "   Writing Unknown2... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Unknown2... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.WriteByte(unknown2);
         _logger.LogDebug(
-            "   Writing Ticket ID... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Ticket ID... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(BitConverter.GetBytes(Shared.Swap(TicketID)), 0, 8);
         _logger.LogDebug(
-            "   Writing Console ID... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Console ID... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(BitConverter.GetBytes(Shared.Swap(ConsoleID)), 0, 4);
         _logger.LogDebug(
-            "   Writing Title ID... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Title ID... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(BitConverter.GetBytes(Shared.Swap(titleId)), 0, 8);
         _logger.LogDebug(
-            "   Writing Unknwon3... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Unknwon3... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(BitConverter.GetBytes(Shared.Swap(unknown3)), 0, 2);
         _logger.LogDebug(
-            "   Writing NumOfDLC... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing NumOfDLC... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(BitConverter.GetBytes(Shared.Swap(numOfDlc)), 0, 2);
         _logger.LogDebug(
-            "   Writing Unknwon4... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Unknwon4... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(BitConverter.GetBytes(Shared.Swap(unknown4)), 0, 8);
         _logger.LogDebug(
-            "   Writing Padding2... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Padding2... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.WriteByte(padding2);
         _logger.LogDebug(
-            "   Writing Common Key Index... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Common Key Index... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.WriteByte(commonKeyIndex);
         object[] objArray1 = new object[1];
         long position = memoryStream.Position;
         objArray1[0] = position.ToString("x8").ToUpper();
-        _logger.LogDebug("   Writing Unknown5... (Offset: 0x{0})", objArray1);
+        _logger.LogDebug("   Writing Unknown5... (Offset: 0x{Offset})", objArray1);
         memoryStream.Write(unknown5, 0, unknown5.Length);
         object[] objArray2 = new object[1];
         position = memoryStream.Position;
         objArray2[0] = position.ToString("x8").ToUpper();
-        _logger.LogDebug("   Writing Unknown6... (Offset: 0x{0})", objArray2);
+        _logger.LogDebug("   Writing Unknown6... (Offset: 0x{Offset})", objArray2);
         memoryStream.Write(unknown6, 0, unknown6.Length);
         object[] objArray3 = new object[1];
         position = memoryStream.Position;
         objArray3[0] = position.ToString("x8").ToUpper();
-        _logger.LogDebug("   Writing Padding3... (Offset: 0x{0})", objArray3);
+        _logger.LogDebug("   Writing Padding3... (Offset: 0x{Offset})", objArray3);
         memoryStream.Write(BitConverter.GetBytes(Shared.Swap(padding3)), 0, 2);
         object[] objArray4 = new object[1];
         position = memoryStream.Position;
         objArray4[0] = position.ToString("x8").ToUpper();
-        _logger.LogDebug("   Writing Enable Time Limit... (Offset: 0x{0})", objArray4);
+        _logger.LogDebug("   Writing Enable Time Limit... (Offset: 0x{Offset})", objArray4);
         memoryStream.Write(BitConverter.GetBytes(Shared.Swap(enableTimeLimit)), 0, 4);
         object[] objArray5 = new object[1];
         position = memoryStream.Position;
         objArray5[0] = position.ToString("x8").ToUpper();
-        _logger.LogDebug("   Writing Time Limit... (Offset: 0x{0})", objArray5);
+        _logger.LogDebug("   Writing Time Limit... (Offset: 0x{Offset})", objArray5);
         memoryStream.Write(BitConverter.GetBytes(Shared.Swap(timeLimit)), 0, 4);
         object[] objArray6 = new object[1];
         position = memoryStream.Position;
         objArray6[0] = position.ToString("x8").ToUpper();
-        _logger.LogDebug("   Writing Padding4... (Offset: 0x{0})", objArray6);
+        _logger.LogDebug("   Writing Padding4... (Offset: 0x{Offset})", objArray6);
         memoryStream.Write(padding4, 0, padding4.Length);
         byte[] array = memoryStream.ToArray();
         memoryStream.Dispose();
@@ -408,15 +408,14 @@ public class Ticket(ILogger<Ticket>? logger = null)
         {
             _logger.LogDebug("   Fakesigning Ticket...");
             //byte[] numArray = new byte[20];
-            SHA1 shA1 = SHA1.Create();
             for (ushort index = 0; index < ushort.MaxValue; ++index)
             {
                 byte[] bytes = BitConverter.GetBytes(index);
                 array[498] = bytes[1];
                 array[499] = bytes[0];
-                if (shA1.ComputeHash(array)[0] == 0)
+                if (SHA1.HashData(array)[0] == 0)
                 {
-                    _logger.LogDebug("   -> Signed ({0})", (object)index);
+                    _logger.LogDebug("   -> Signed ({Index})", index);
                     break;
                 }
                 if (index == 65534)
@@ -425,7 +424,6 @@ public class Ticket(ILogger<Ticket>? logger = null)
                     throw new Exception("Fakesigning failed...");
                 }
             }
-            shA1.Clear();
         }
         writeStream.Seek(0L, SeekOrigin.Begin);
         writeStream.Write(array, 0, array.Length);
@@ -438,128 +436,128 @@ public class Ticket(ILogger<Ticket>? logger = null)
         ticketFile.Seek(0L, SeekOrigin.Begin);
         byte[] buffer = new byte[8];
         _logger.LogDebug(
-            "   Reading Signature Exponent... (Offset: 0x{0})",
-            (object)ticketFile.Position.ToString("x8").ToUpper()
+            "   Reading Signature Exponent... (Offset: 0x{Offset})",
+            ticketFile.Position.ToString("x8").ToUpper()
         );
         ticketFile.ReadExactly(buffer, 0, 4);
         signatureExponent = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
         _logger.LogDebug(
-            "   Reading Signature... (Offset: 0x{0})",
-            (object)ticketFile.Position.ToString("x8").ToUpper()
+            "   Reading Signature... (Offset: 0x{Offset})",
+            ticketFile.Position.ToString("x8").ToUpper()
         );
         ticketFile.ReadExactly(signature);
         _logger.LogDebug(
-            "   Reading Padding... (Offset: 0x{0})",
-            (object)ticketFile.Position.ToString("x8").ToUpper()
+            "   Reading Padding... (Offset: 0x{Offset})",
+            ticketFile.Position.ToString("x8").ToUpper()
         );
         ticketFile.ReadExactly(padding);
         _logger.LogDebug(
-            "   Reading Issuer... (Offset: 0x{0})",
-            (object)ticketFile.Position.ToString("x8").ToUpper()
+            "   Reading Issuer... (Offset: 0x{Offset})",
+            ticketFile.Position.ToString("x8").ToUpper()
         );
         ticketFile.ReadExactly(issuer);
         _logger.LogDebug(
-            "   Reading Unknown... (Offset: 0x{0})",
-            (object)ticketFile.Position.ToString("x8").ToUpper()
+            "   Reading Unknown... (Offset: 0x{Offset})",
+            ticketFile.Position.ToString("x8").ToUpper()
         );
         ticketFile.ReadExactly(unknown);
         _logger.LogDebug(
-            "   Reading Title Key... (Offset: 0x{0})",
-            (object)ticketFile.Position.ToString("x8").ToUpper()
+            "   Reading Title Key... (Offset: 0x{Offset})",
+            ticketFile.Position.ToString("x8").ToUpper()
         );
         ticketFile.ReadExactly(encryptedTitleKey);
         _logger.LogDebug(
-            "   Reading Unknown2... (Offset: 0x{0})",
-            (object)ticketFile.Position.ToString("x8").ToUpper()
+            "   Reading Unknown2... (Offset: 0x{Offset})",
+            ticketFile.Position.ToString("x8").ToUpper()
         );
         unknown2 = (byte)ticketFile.ReadByte();
         _logger.LogDebug(
-            "   Reading Ticket ID.. (Offset: 0x{0})",
-            (object)ticketFile.Position.ToString("x8").ToUpper()
+            "   Reading Ticket ID.. (Offset: 0x{Offset})",
+            ticketFile.Position.ToString("x8").ToUpper()
         );
         ticketFile.ReadExactly(buffer, 0, 8);
         TicketID = Shared.Swap(BitConverter.ToUInt64(buffer, 0));
         _logger.LogDebug(
-            "   Reading Console ID... (Offset: 0x{0})",
-            (object)ticketFile.Position.ToString("x8").ToUpper()
+            "   Reading Console ID... (Offset: 0x{Offset})",
+            ticketFile.Position.ToString("x8").ToUpper()
         );
         ticketFile.ReadExactly(buffer, 0, 4);
         ConsoleID = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
         _logger.LogDebug(
-            "   Reading Title ID... (Offset: 0x{0})",
-            (object)ticketFile.Position.ToString("x8").ToUpper()
+            "   Reading Title ID... (Offset: 0x{Offset})",
+            ticketFile.Position.ToString("x8").ToUpper()
         );
         ticketFile.ReadExactly(buffer, 0, 8);
         titleId = Shared.Swap(BitConverter.ToUInt64(buffer, 0));
         _logger.LogDebug(
-            "   Reading Unknown3... (Offset: 0x{0})",
-            (object)ticketFile.Position.ToString("x8").ToUpper()
+            "   Reading Unknown3... (Offset: 0x{Offset})",
+            ticketFile.Position.ToString("x8").ToUpper()
         );
         _logger.LogDebug(
-            "   Reading NumOfDLC... (Offset: 0x{0})",
-            (object)ticketFile.Position.ToString("x8").ToUpper()
+            "   Reading NumOfDLC... (Offset: 0x{Offset})",
+            ticketFile.Position.ToString("x8").ToUpper()
         );
         ticketFile.ReadExactly(buffer, 0, 4);
         unknown3 = Shared.Swap(BitConverter.ToUInt16(buffer, 0));
         numOfDlc = Shared.Swap(BitConverter.ToUInt16(buffer, 2));
         _logger.LogDebug(
-            "   Reading Unknown4... (Offset: 0x{0})",
-            (object)ticketFile.Position.ToString("x8").ToUpper()
+            "   Reading Unknown4... (Offset: 0x{Offset})",
+            ticketFile.Position.ToString("x8").ToUpper()
         );
         ticketFile.ReadExactly(buffer, 0, 8);
         unknown4 = Shared.Swap(BitConverter.ToUInt64(buffer, 0));
         _logger.LogDebug(
-            "   Reading Padding2... (Offset: 0x{0})",
-            (object)ticketFile.Position.ToString("x8").ToUpper()
+            "   Reading Padding2... (Offset: 0x{Offset})",
+            ticketFile.Position.ToString("x8").ToUpper()
         );
         padding2 = (byte)ticketFile.ReadByte();
         _logger.LogDebug(
-            "   Reading Common Key Index... (Offset: 0x{0})",
-            (object)ticketFile.Position.ToString("x8").ToUpper()
+            "   Reading Common Key Index... (Offset: 0x{Offset})",
+            ticketFile.Position.ToString("x8").ToUpper()
         );
         commonKeyIndex = (byte)ticketFile.ReadByte();
         newKeyIndex = commonKeyIndex;
         _logger.LogDebug(
-            "   Reading Unknown5... (Offset: 0x{0})",
-            (object)ticketFile.Position.ToString("x8").ToUpper()
+            "   Reading Unknown5... (Offset: 0x{Offset})",
+            ticketFile.Position.ToString("x8").ToUpper()
         );
         ticketFile.ReadExactly(unknown5);
         _logger.LogDebug(
-            "   Reading Unknown6... (Offset: 0x{0})",
-            (object)ticketFile.Position.ToString("x8").ToUpper()
+            "   Reading Unknown6... (Offset: 0x{Offset})",
+            ticketFile.Position.ToString("x8").ToUpper()
         );
         ticketFile.ReadExactly(unknown6);
         _logger.LogDebug(
-            "   Reading Padding3... (Offset: 0x{0})",
-            (object)ticketFile.Position.ToString("x8").ToUpper()
+            "   Reading Padding3... (Offset: 0x{Offset})",
+            ticketFile.Position.ToString("x8").ToUpper()
         );
         ticketFile.ReadExactly(buffer, 0, 2);
         padding3 = Shared.Swap(BitConverter.ToUInt16(buffer, 0));
         _logger.LogDebug(
-            "   Reading Enable Time Limit... (Offset: 0x{0})",
-            (object)ticketFile.Position.ToString("x8").ToUpper()
+            "   Reading Enable Time Limit... (Offset: 0x{Offset})",
+            ticketFile.Position.ToString("x8").ToUpper()
         );
         _logger.LogDebug(
-            "   Reading Time Limit... (Offset: 0x{0})",
-            (object)ticketFile.Position.ToString("x8").ToUpper()
+            "   Reading Time Limit... (Offset: 0x{Offset})",
+            ticketFile.Position.ToString("x8").ToUpper()
         );
         ticketFile.ReadExactly(buffer, 0, 8);
         enableTimeLimit = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
         timeLimit = Shared.Swap(BitConverter.ToUInt32(buffer, 4));
         _logger.LogDebug(
-            "   Reading Padding4... (Offset: 0x{0})",
-            (object)ticketFile.Position.ToString("x8").ToUpper()
+            "   Reading Padding4... (Offset: 0x{Offset})",
+            ticketFile.Position.ToString("x8").ToUpper()
         );
         ticketFile.ReadExactly(padding4);
         _logger.LogDebug("   Decrypting Title Key...");
         PrivDecryptTitleKey();
         _logger.LogDebug(
-            "    -> Encrypted Title Key: {0}",
-            (object)Shared.ByteArrayToString(encryptedTitleKey)
+            "    -> Encrypted Title Key: {Key}",
+            Shared.ByteArrayToString(encryptedTitleKey)
         );
         _logger.LogDebug(
-            "    -> Decrypted Title Key: {0}",
-            (object)Shared.ByteArrayToString(decryptedTitleKey)
+            "    -> Decrypted Title Key: {Key}",
+            Shared.ByteArrayToString(decryptedTitleKey)
         );
         _logger.LogDebug("Parsing Ticket Finished...");
     }

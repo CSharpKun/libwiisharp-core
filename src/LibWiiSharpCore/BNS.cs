@@ -76,7 +76,7 @@ public class BNS
     private readonly int[] pHist1 = new int[2];
     private readonly int[] pHist2 = new int[2];
     private int tempSampleCount;
-    private readonly byte[] waveFile;
+    private readonly byte[]? waveFile;
     private readonly bool loopFromWave;
     private bool converted;
 
@@ -180,7 +180,7 @@ public class BNS
             Convert(waveFile, loopFromWave);
         }
 
-        MemoryStream memoryStream = new MemoryStream();
+        MemoryStream memoryStream = new();
         try
         {
             bnsHeader.Write(memoryStream);
@@ -206,7 +206,7 @@ public class BNS
             File.Delete(destinationFile);
         }
 
-        using FileStream fileStream = new FileStream(destinationFile, FileMode.Create);
+        using FileStream fileStream = new(destinationFile, FileMode.Create);
         byte[] array = ToMemoryStream().ToArray();
         fileStream.Write(array, 0, array.Length);
     }
@@ -241,10 +241,13 @@ public class BNS
             throw new Exception("Only 16bit Wave files are supported!");
         }
 
-        bnsData.Data =
-            wave.DataFormat == 1
-                ? Encode(wave.SampleData)
-                : throw new Exception("The format of this Wave file is not supported!");
+        if (wave.DataFormat != 1)
+            throw new Exception("The format of this Wave file is not supported!");
+
+        bnsData.Data = Encode(
+            wave.SampleData ?? throw new NullReferenceException("Wave sample data is null.")
+        );
+
         if (wave.NumChannels == 1)
         {
             bnsHeader.InfoLength = 96U;
@@ -311,8 +314,8 @@ public class BNS
         int num4 = 0;
         int num5 = num3 * 8;
         bnsInfo.Channels[1].Start = bnsInfo.Channels.Length == 2 ? (uint)num5 : 0U;
-        int[] array1 = intList1.ToArray();
-        int[] array2 = intList2.ToArray();
+        int[] array1 = [.. intList1];
+        int[] array2 = [.. intList2];
         for (int index1 = 0; index1 < num3; ++index1)
         {
             try
@@ -429,14 +432,14 @@ public class BNS
                 int input1 = inputBuffer[index1] - num5 >> stdExponent;
                 if (input1 <= 7 && input1 >= -8)
                 {
-                    int num6 = Clamp(input1, -8, 7);
+                    int num6 = Math.Clamp(input1, -8, 7);
                     numArray[index1 / 2 + 1] =
                         (index1 & 1) == 0
                             ? (byte)(num6 << 4)
                             : (byte)(numArray[index1 / 2 + 1] | (uint)(num6 & 15));
                     int input2 = num5 + (num6 << stdExponent);
                     tlSamples[0] = tlSamples[1];
-                    tlSamples[1] = Clamp(input2, short.MinValue, short.MaxValue);
+                    tlSamples[1] = Math.Clamp(input2, short.MinValue, short.MaxValue);
                     num1 += (int)Math.Pow(tlSamples[1] - inputBuffer[index1], 2.0);
                 }
                 else
@@ -486,7 +489,7 @@ public class BNS
         return FindExponent(num1);
     }
 
-    private int FindExponent(double residual)
+    private static int FindExponent(double residual)
     {
         int num = 0;
         for (; residual > 7.5 || residual < -8.5; residual /= 2.0)
@@ -495,16 +498,6 @@ public class BNS
         }
 
         return num;
-    }
-
-    private int Clamp(int input, int min, int max)
-    {
-        if (input < min)
-        {
-            return min;
-        }
-
-        return input > max ? max : input;
     }
 
     #endregion
@@ -535,8 +528,8 @@ public class BNS
     public static Wave BnsToWave(string pathToFile)
     {
         BNS bns = new();
-        byte[] samples = null;
-        using (FileStream fileStream = new FileStream(pathToFile, FileMode.Open))
+        byte[] samples;
+        using (FileStream fileStream = new(pathToFile, FileMode.Open))
         {
             samples = bns.Read(fileStream);
         }
@@ -636,7 +629,7 @@ public class BNS
                 num8 -= 16;
             }
 
-            int num9 = Clamp(
+            int num9 = Math.Clamp(
                 (num2 * num8 << 11) + (num5 * num3 + num6 * num4) + 1024 >> 11,
                 short.MinValue,
                 short.MaxValue

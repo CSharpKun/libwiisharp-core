@@ -241,8 +241,7 @@ public class Headers
         /// All Titles as a string array.
         /// </summary>
         public string[] AllTitles =>
-            new string[8]
-            {
+            [
                 JapaneseTitle,
                 EnglishTitle,
                 GermanTitle,
@@ -251,7 +250,7 @@ public class Headers
                 ItalianTitle,
                 DutchTitle,
                 KoreanTitle,
-            };
+            ];
 
         /// <summary>
         /// When parsing an IMET header, this value will turn false if the hash stored in the header doesn't match the headers hash.
@@ -333,7 +332,7 @@ public class Headers
             params string[] titles
         )
         {
-            Headers.IMET imet = new Headers.IMET { IsShortIMET = isShortImet };
+            Headers.IMET imet = new() { IsShortIMET = isShortImet };
             for (int titleIndex = 0; titleIndex < titles.Length; ++titleIndex)
             {
                 imet.SetTitleFromString(titles[titleIndex], titleIndex);
@@ -399,7 +398,7 @@ public class Headers
         /// <returns></returns>
         public MemoryStream ToMemoryStream()
         {
-            MemoryStream memoryStream = new MemoryStream();
+            MemoryStream memoryStream = new();
             try
             {
                 WriteToStream(memoryStream);
@@ -453,8 +452,8 @@ public class Headers
         /// <returns></returns>
         public string[] GetTitles()
         {
-            return new string[8]
-            {
+            return
+            [
                 JapaneseTitle,
                 EnglishTitle,
                 GermanTitle,
@@ -463,7 +462,7 @@ public class Headers
                 ItalianTitle,
                 DutchTitle,
                 KoreanTitle,
-            };
+            ];
         }
         #endregion
 
@@ -500,7 +499,7 @@ public class Headers
             writeStream.Write(hash, 0, hash.Length);
             byte[] numArray = new byte[writeStream.Position];
             writeStream.Seek(0L, SeekOrigin.Begin);
-            writeStream.Read(numArray, 0, numArray.Length);
+            writeStream.ReadExactly(numArray);
             ComputeHash(numArray, !IsShortIMET ? 64 : 0);
             writeStream.Seek(position, SeekOrigin.Begin);
             writeStream.Write(hash, 0, hash.Length);
@@ -519,61 +518,61 @@ public class Headers
             byte[] buffer1 = new byte[4];
             if (!IsShortIMET)
             {
-                headerStream.Read(additionalPadding, 0, additionalPadding.Length);
+                headerStream.ReadExactly(additionalPadding);
             }
 
-            headerStream.Read(padding, 0, padding.Length);
-            headerStream.Read(buffer1, 0, 4);
+            headerStream.ReadExactly(padding);
+            headerStream.ReadExactly(buffer1);
             if ((int)Shared.Swap(BitConverter.ToUInt32(buffer1, 0)) != (int)imetMagic)
             {
                 throw new Exception("Invalid Magic!");
             }
 
-            headerStream.Read(buffer1, 0, 4);
+            headerStream.ReadExactly(buffer1);
             if ((int)Shared.Swap(BitConverter.ToUInt32(buffer1, 0)) != (int)sizeOfHeader)
             {
                 throw new Exception("Invalid Header Size!");
             }
 
-            headerStream.Read(buffer1, 0, 4);
+            headerStream.ReadExactly(buffer1);
             unknown = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
-            headerStream.Read(buffer1, 0, 4);
+            headerStream.ReadExactly(buffer1);
             IconSize = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
-            headerStream.Read(buffer1, 0, 4);
+            headerStream.ReadExactly(buffer1);
             BannerSize = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
-            headerStream.Read(buffer1, 0, 4);
+            headerStream.ReadExactly(buffer1);
             SoundSize = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
-            headerStream.Read(buffer1, 0, 4);
+            headerStream.ReadExactly(buffer1);
             flags = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
-            headerStream.Read(japaneseTitle, 0, japaneseTitle.Length);
-            headerStream.Read(englishTitle, 0, englishTitle.Length);
-            headerStream.Read(germanTitle, 0, germanTitle.Length);
-            headerStream.Read(frenchTitle, 0, frenchTitle.Length);
-            headerStream.Read(spanishTitle, 0, spanishTitle.Length);
-            headerStream.Read(italianTitle, 0, italianTitle.Length);
-            headerStream.Read(dutchTitle, 0, dutchTitle.Length);
-            headerStream.Read(unknownTitle1, 0, unknownTitle1.Length);
-            headerStream.Read(unknownTitle2, 0, unknownTitle2.Length);
-            headerStream.Read(koreanTitle, 0, koreanTitle.Length);
-            headerStream.Read(padding2, 0, padding2.Length);
-            headerStream.Read(this.hash, 0, this.hash.Length);
+            headerStream.ReadExactly(japaneseTitle);
+            headerStream.ReadExactly(englishTitle);
+            headerStream.ReadExactly(germanTitle);
+            headerStream.ReadExactly(frenchTitle);
+            headerStream.ReadExactly(spanishTitle);
+            headerStream.ReadExactly(italianTitle);
+            headerStream.ReadExactly(dutchTitle);
+            headerStream.ReadExactly(unknownTitle1);
+            headerStream.ReadExactly(unknownTitle2);
+            headerStream.ReadExactly(koreanTitle);
+            headerStream.ReadExactly(padding2);
+            headerStream.ReadExactly(this.hash);
             headerStream.Seek(-16L, SeekOrigin.Current);
             headerStream.Write(new byte[16], 0, 16);
             byte[] buffer2 = new byte[headerStream.Length];
             headerStream.Seek(0L, SeekOrigin.Begin);
-            headerStream.Read(buffer2, 0, buffer2.Length);
+            headerStream.ReadExactly(buffer2);
             MD5 md5 = MD5.Create();
             byte[] hash = md5.ComputeHash(buffer2, !IsShortIMET ? 64 : 0, 1536);
             md5.Clear();
             HashesMatch = Shared.CompareByteArrays(hash, this.hash);
         }
 
-        private string ReturnTitleAsString(byte[] title)
+        private static string ReturnTitleAsString(byte[] title)
         {
             string empty = string.Empty;
             for (int index = 0; index < 84; index += 2)
             {
-                char ch = BitConverter.ToChar(new byte[2] { title[index + 1], title[index] }, 0);
+                char ch = BitConverter.ToChar([title[index + 1], title[index]], 0);
                 if (ch != char.MinValue)
                 {
                     empty += ch.ToString();
@@ -664,8 +663,8 @@ public class Headers
                 throw new Exception("No IMD5 Header found!");
             }
 
-            Headers.IMD5 imD5 = new Headers.IMD5();
-            MemoryStream memoryStream = new MemoryStream(fileOrHeader);
+            Headers.IMD5 imD5 = new();
+            MemoryStream memoryStream = new(fileOrHeader);
             try
             {
                 imD5.PrivParseHeader(memoryStream);
@@ -691,7 +690,7 @@ public class Headers
                 throw new Exception("No IMD5 Header found!");
             }
 
-            Headers.IMD5 imD5 = new Headers.IMD5();
+            Headers.IMD5 imD5 = new();
             imD5.PrivParseHeader(fileOrHeader);
             return imD5;
         }
@@ -703,7 +702,7 @@ public class Headers
         /// <returns></returns>
         public static Headers.IMD5 Create(byte[] file)
         {
-            IMD5 imD5 = new IMD5 { fileSize = (uint)file.Length };
+            IMD5 imD5 = new() { fileSize = (uint)file.Length };
             imD5.PrivComputeHash(file);
             return imD5;
         }
@@ -716,7 +715,7 @@ public class Headers
         {
             byte[] buffer = AddHeader(File.ReadAllBytes(pathToFile));
             File.Delete(pathToFile);
-            using FileStream fileStream = new FileStream(pathToFile, FileMode.Create);
+            using FileStream fileStream = new(pathToFile, FileMode.Create);
             fileStream.Write(buffer, 0, buffer.Length);
         }
 
@@ -728,12 +727,11 @@ public class Headers
         public static byte[] AddHeader(byte[] file)
         {
             Headers.IMD5 imD5 = Create(file);
-            MemoryStream memoryStream1 = new MemoryStream();
+            using MemoryStream memoryStream1 = new();
             MemoryStream memoryStream2 = memoryStream1;
             imD5.PrivWriteToStream(memoryStream2);
             memoryStream1.Write(file, 0, file.Length);
             byte[] array = memoryStream1.ToArray();
-            memoryStream1.Dispose();
             return array;
         }
 
@@ -745,7 +743,7 @@ public class Headers
         {
             byte[] buffer = RemoveHeader(File.ReadAllBytes(pathToFile));
             File.Delete(pathToFile);
-            using FileStream fileStream = new FileStream(pathToFile, FileMode.Create);
+            using FileStream fileStream = new(pathToFile, FileMode.Create);
             fileStream.Write(buffer, 0, buffer.Length);
         }
 
@@ -756,7 +754,7 @@ public class Headers
         /// <returns></returns>
         public static byte[] RemoveHeader(byte[] file)
         {
-            MemoryStream memoryStream = new MemoryStream();
+            MemoryStream memoryStream = new();
             memoryStream.Write(file, 32, file.Length - 32);
             byte[] array = memoryStream.ToArray();
             memoryStream.Dispose();
@@ -769,7 +767,7 @@ public class Headers
         /// <returns></returns>
         public MemoryStream ToMemoryStream()
         {
-            MemoryStream memoryStream = new MemoryStream();
+            MemoryStream memoryStream = new();
             try
             {
                 PrivWriteToStream(memoryStream);
@@ -813,25 +811,23 @@ public class Headers
 
         private void PrivComputeHash(byte[] bytesToHash)
         {
-            MD5 md5 = MD5.Create();
-            hash = md5.ComputeHash(bytesToHash);
-            md5.Clear();
+            hash = MD5.HashData(bytesToHash);
         }
 
         private void PrivParseHeader(Stream headerStream)
         {
             headerStream.Seek(0L, SeekOrigin.Begin);
             byte[] buffer = new byte[4];
-            headerStream.Read(buffer, 0, 4);
+            headerStream.ReadExactly(buffer);
             if ((int)Shared.Swap(BitConverter.ToUInt32(buffer, 0)) != (int)imd5Magic)
             {
                 throw new Exception("Invalid Magic!");
             }
 
-            headerStream.Read(buffer, 0, 4);
+            headerStream.ReadExactly(buffer);
             fileSize = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
-            headerStream.Read(padding, 0, padding.Length);
-            headerStream.Read(hash, 0, hash.Length);
+            headerStream.ReadExactly(padding);
+            headerStream.ReadExactly(hash);
         }
         #endregion
     }

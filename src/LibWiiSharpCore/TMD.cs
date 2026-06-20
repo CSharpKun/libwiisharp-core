@@ -375,103 +375,103 @@ public class TMD(ILogger<TMD>? logger = null)
         MemoryStream memoryStream = new();
         memoryStream.Seek(0L, SeekOrigin.Begin);
         _logger.LogDebug(
-            "   Writing Signature Exponent... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Signature Exponent... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(BitConverter.GetBytes(Shared.Swap(signatureExponent)), 0, 4);
         _logger.LogDebug(
-            "   Writing Signature... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Signature... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(signature, 0, signature.Length);
         _logger.LogDebug(
-            "   Writing Padding... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Padding... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(padding, 0, padding.Length);
         _logger.LogDebug(
-            "   Writing Issuer... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Issuer... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(issuer, 0, issuer.Length);
         _logger.LogDebug(
-            "   Writing Version... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Version... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.WriteByte(version);
         _logger.LogDebug(
-            "   Writing CA Crl Version... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing CA Crl Version... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.WriteByte(caCrlVersion);
         _logger.LogDebug(
-            "   Writing Signer Crl Version... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Signer Crl Version... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.WriteByte(signerCrlVersion);
         _logger.LogDebug(
-            "   Writing Padding Byte... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Padding Byte... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.WriteByte(paddingByte);
         _logger.LogDebug(
-            "   Writing Startup IOS... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Startup IOS... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(BitConverter.GetBytes(Shared.Swap(startupIos)), 0, 8);
         _logger.LogDebug(
-            "   Writing Title ID... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Title ID... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(BitConverter.GetBytes(Shared.Swap(titleId)), 0, 8);
         _logger.LogDebug(
-            "   Writing Title Type... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Title Type... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(BitConverter.GetBytes(Shared.Swap(titleType)), 0, 4);
         _logger.LogDebug(
-            "   Writing Group ID... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Group ID... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(BitConverter.GetBytes(Shared.Swap(groupId)), 0, 2);
         _logger.LogDebug(
-            "   Writing Padding2... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Padding2... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(BitConverter.GetBytes(Shared.Swap(padding2)), 0, 2);
         _logger.LogDebug(
-            "   Writing Region... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Region... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(BitConverter.GetBytes(Shared.Swap(region)), 0, 2);
         _logger.LogDebug(
-            "   Writing Reserved... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Reserved... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(reserved, 0, reserved.Length);
         _logger.LogDebug(
-            "   Writing Access Rights... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Access Rights... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(BitConverter.GetBytes(Shared.Swap(accessRights)), 0, 4);
         _logger.LogDebug(
-            "   Writing Title Version... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Title Version... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(BitConverter.GetBytes(Shared.Swap(titleVersion)), 0, 2);
         _logger.LogDebug(
-            "   Writing NumOfContents... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing NumOfContents... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(BitConverter.GetBytes(Shared.Swap(numOfContents)), 0, 2);
         _logger.LogDebug(
-            "   Writing Boot Index... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Boot Index... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(BitConverter.GetBytes(Shared.Swap(bootIndex)), 0, 2);
         _logger.LogDebug(
-            "   Writing Padding3... (Offset: 0x{0})",
-            (object)memoryStream.Position.ToString("x8").ToUpper()
+            "   Writing Padding3... (Offset: 0x{Offset})",
+            memoryStream.Position.ToString("x8").ToUpper()
         );
         memoryStream.Write(BitConverter.GetBytes(Shared.Swap(padding3)), 0, 2);
         List<ContentIndices> contentIndicesList = [];
@@ -488,7 +488,7 @@ public class TMD(ILogger<TMD>? logger = null)
         for (int index = 0; index < contentIndicesList.Count; ++index)
         {
             _logger.LogDebug(
-                "   Writing Content #{1} of {2}... (Offset: 0x{0})",
+                "   Writing Content #{Current} of {All}... (Offset: 0x{Offset})",
                 memoryStream.Position.ToString("x8").ToUpper().ToUpper(),
                 index + 1,
                 numOfContents
@@ -537,7 +537,7 @@ public class TMD(ILogger<TMD>? logger = null)
                 array[483] = bytes[0];
                 if (shA1.ComputeHash(array)[0] == 0)
                 {
-                    _logger.LogDebug("   -> Signed ({0})", (object)index);
+                    _logger.LogDebug("   -> Signed ({Index})", index);
                     break;
                 }
                 if (index == 65534)
@@ -570,41 +570,41 @@ public class TMD(ILogger<TMD>? logger = null)
         tmdFile.Seek(0L, SeekOrigin.Begin);
         byte[] buffer = new byte[8];
         _logger.LogDebug(
-            "   Reading Signature Exponent... (Offset: 0x{0})",
-            (object)tmdFile.Position.ToString("x8").ToUpper()
+            "   Reading Signature Exponent... (Offset: 0x{Offset})",
+            tmdFile.Position.ToString("x8").ToUpper()
         );
         tmdFile.ReadExactly(buffer, 0, 4);
         signatureExponent = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
         _logger.LogDebug(
-            "   Reading Signature... (Offset: 0x{0})",
-            (object)tmdFile.Position.ToString("x8").ToUpper()
+            "   Reading Signature... (Offset: 0x{Offset})",
+            tmdFile.Position.ToString("x8").ToUpper()
         );
         tmdFile.ReadExactly(signature);
         _logger.LogDebug(
-            "   Reading Padding... (Offset: 0x{0})",
-            (object)tmdFile.Position.ToString("x8").ToUpper()
+            "   Reading Padding... (Offset: 0x{Offset})",
+            tmdFile.Position.ToString("x8").ToUpper()
         );
         tmdFile.ReadExactly(padding);
         _logger.LogDebug(
-            "   Reading Issuer... (Offset: 0x{0})",
-            (object)tmdFile.Position.ToString("x8").ToUpper()
+            "   Reading Issuer... (Offset: 0x{Offset})",
+            tmdFile.Position.ToString("x8").ToUpper()
         );
         tmdFile.ReadExactly(issuer);
         _logger.LogDebug(
-            "   Reading Version... (Offset: 0x{0})",
-            (object)tmdFile.Position.ToString("x8").ToUpper()
+            "   Reading Version... (Offset: 0x{Offset})",
+            tmdFile.Position.ToString("x8").ToUpper()
         );
         _logger.LogDebug(
-            "   Reading CA Crl Version... (Offset: 0x{0})",
-            (object)tmdFile.Position.ToString("x8").ToUpper()
+            "   Reading CA Crl Version... (Offset: 0x{Offset})",
+            tmdFile.Position.ToString("x8").ToUpper()
         );
         _logger.LogDebug(
-            "   Reading Signer Crl Version... (Offset: 0x{0})",
-            (object)tmdFile.Position.ToString("x8").ToUpper()
+            "   Reading Signer Crl Version... (Offset: 0x{Offset})",
+            tmdFile.Position.ToString("x8").ToUpper()
         );
         _logger.LogDebug(
-            "   Reading Padding Byte... (Offset: 0x{0})",
-            (object)tmdFile.Position.ToString("x8").ToUpper()
+            "   Reading Padding Byte... (Offset: 0x{Offset})",
+            tmdFile.Position.ToString("x8").ToUpper()
         );
         tmdFile.ReadExactly(buffer, 0, 4);
         version = buffer[0];
@@ -612,67 +612,67 @@ public class TMD(ILogger<TMD>? logger = null)
         signerCrlVersion = buffer[2];
         paddingByte = buffer[3];
         _logger.LogDebug(
-            "   Reading Startup IOS... (Offset: 0x{0})",
-            (object)tmdFile.Position.ToString("x8").ToUpper()
+            "   Reading Startup IOS... (Offset: 0x{Offset})",
+            tmdFile.Position.ToString("x8").ToUpper()
         );
         tmdFile.ReadExactly(buffer, 0, 8);
         startupIos = Shared.Swap(BitConverter.ToUInt64(buffer, 0));
         _logger.LogDebug(
-            "   Reading Title ID... (Offset: 0x{0})",
-            (object)tmdFile.Position.ToString("x8").ToUpper()
+            "   Reading Title ID... (Offset: 0x{Offset})",
+            tmdFile.Position.ToString("x8").ToUpper()
         );
         tmdFile.ReadExactly(buffer, 0, 8);
         titleId = Shared.Swap(BitConverter.ToUInt64(buffer, 0));
         _logger.LogDebug(
-            "   Reading Title Type... (Offset: 0x{0})",
-            (object)tmdFile.Position.ToString("x8").ToUpper()
+            "   Reading Title Type... (Offset: 0x{Offset})",
+            tmdFile.Position.ToString("x8").ToUpper()
         );
         tmdFile.ReadExactly(buffer, 0, 4);
         titleType = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
         _logger.LogDebug(
-            "   Reading Group ID... (Offset: 0x{0})",
-            (object)tmdFile.Position.ToString("x8").ToUpper()
+            "   Reading Group ID... (Offset: 0x{Offset})",
+            tmdFile.Position.ToString("x8").ToUpper()
         );
         tmdFile.ReadExactly(buffer, 0, 2);
         groupId = Shared.Swap(BitConverter.ToUInt16(buffer, 0));
         _logger.LogDebug(
-            "   Reading Padding2... (Offset: 0x{0})",
-            (object)tmdFile.Position.ToString("x8").ToUpper()
+            "   Reading Padding2... (Offset: 0x{Offset})",
+            tmdFile.Position.ToString("x8").ToUpper()
         );
         tmdFile.ReadExactly(buffer, 0, 2);
         padding2 = Shared.Swap(BitConverter.ToUInt16(buffer, 0));
         _logger.LogDebug(
-            "   Reading Region... (Offset: 0x{0})",
-            (object)tmdFile.Position.ToString("x8").ToUpper()
+            "   Reading Region... (Offset: 0x{Offset})",
+            tmdFile.Position.ToString("x8").ToUpper()
         );
         tmdFile.ReadExactly(buffer, 0, 2);
         region = Shared.Swap(BitConverter.ToUInt16(buffer, 0));
         _logger.LogDebug(
-            "   Reading Reserved... (Offset: 0x{0})",
-            (object)tmdFile.Position.ToString("x8").ToUpper()
+            "   Reading Reserved... (Offset: 0x{Offset})",
+            tmdFile.Position.ToString("x8").ToUpper()
         );
         tmdFile.ReadExactly(reserved);
         _logger.LogDebug(
-            "   Reading Access Rights... (Offset: 0x{0})",
-            (object)tmdFile.Position.ToString("x8").ToUpper()
+            "   Reading Access Rights... (Offset: 0x{Offset})",
+            tmdFile.Position.ToString("x8").ToUpper()
         );
         tmdFile.ReadExactly(buffer, 0, 4);
         accessRights = Shared.Swap(BitConverter.ToUInt32(buffer, 0));
         _logger.LogDebug(
-            "   Reading Title Version... (Offset: 0x{0})",
-            (object)tmdFile.Position.ToString("x8").ToUpper()
+            "   Reading Title Version... (Offset: 0x{Offset})",
+            tmdFile.Position.ToString("x8").ToUpper()
         );
         _logger.LogDebug(
-            "   Reading NumOfContents... (Offset: 0x{0})",
-            (object)tmdFile.Position.ToString("x8").ToUpper()
+            "   Reading NumOfContents... (Offset: 0x{Offset})",
+            tmdFile.Position.ToString("x8").ToUpper()
         );
         _logger.LogDebug(
-            "   Reading Boot Index... (Offset: 0x{0})",
-            (object)tmdFile.Position.ToString("x8").ToUpper()
+            "   Reading Boot Index... (Offset: 0x{Offset})",
+            tmdFile.Position.ToString("x8").ToUpper()
         );
         _logger.LogDebug(
-            "   Reading Padding3... (Offset: 0x{0})",
-            (object)tmdFile.Position.ToString("x8").ToUpper()
+            "   Reading Padding3... (Offset: 0x{Offset})",
+            tmdFile.Position.ToString("x8").ToUpper()
         );
         tmdFile.ReadExactly(buffer, 0, 8);
         titleVersion = Shared.Swap(BitConverter.ToUInt16(buffer, 0));
@@ -683,7 +683,7 @@ public class TMD(ILogger<TMD>? logger = null)
         for (int index = 0; index < numOfContents; ++index)
         {
             _logger.LogDebug(
-                "   Reading Content #{0} of {1}... (Offset: 0x{2})",
+                "   Reading Content #{Current} of {All}... (Offset: 0x{Offset})",
                 index + 1,
                 numOfContents,
                 tmdFile.Position.ToString("x8").ToUpper().ToUpper()

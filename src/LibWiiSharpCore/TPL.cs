@@ -54,7 +54,7 @@ public enum TPL_PaletteFormat
 
 public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
 {
-    private ILogger<TPL> _logger = logger ?? NullLogger<TPL>.Instance;
+    private readonly ILogger<TPL> _logger = logger ?? NullLogger<TPL>.Instance;
 
     private TPL_Header tplHeader = new();
     private List<TPL_TextureEntry> tplTextureEntries = [];
@@ -539,7 +539,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
     {
         _logger.LogDebug("Writing TPL...");
         writeStream.Seek(0L, SeekOrigin.Begin);
-        _logger.LogDebug("   Writing TPL Header... (Offset: 0x{0})", writeStream.Position);
+        _logger.LogDebug("   Writing TPL Header... (Offset: 0x{Offset})", writeStream.Position);
         tplHeader.Write(writeStream);
         int position1 = (int)writeStream.Position;
         writeStream.Seek(tplHeader.NumOfTextures * 8U, SeekOrigin.Current);
@@ -566,7 +566,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
             )
             {
                 _logger.LogDebug(
-                    "   Writing Palette of Texture #{1}... (Offset: 0x{0})",
+                    "   Writing Palette of Texture #{Current}... (Offset: 0x{Offset})",
                     writeStream.Position,
                     index + 1
                 );
@@ -580,7 +580,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         for (int index = 0; index < tplHeader.NumOfTextures; ++index)
         {
             _logger.LogDebug(
-                "   Writing Texture #{1} of {2}... (Offset: 0x{0})",
+                "   Writing Texture #{Current} of {All}... (Offset: 0x{Offset})",
                 writeStream.Position,
                 index + 1,
                 tplHeader.NumOfTextures
@@ -604,7 +604,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
             )
             {
                 _logger.LogDebug(
-                    "   Writing Palette Header of Texture #{1}... (Offset: 0x{0})",
+                    "   Writing Palette Header of Texture #{Current}... (Offset: 0x{Offset})",
                     writeStream.Position,
                     index + 1
                 );
@@ -616,7 +616,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         for (int index = 0; index < tplHeader.NumOfTextures; ++index)
         {
             _logger.LogDebug(
-                "   Writing Texture Header #{1} of {2}... (Offset: 0x{0})",
+                "   Writing Texture Header #{Current} of {All}... (Offset: 0x{Offset})",
                 writeStream.Position,
                 index + 1,
                 tplHeader.NumOfTextures
@@ -628,7 +628,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         for (int index = 0; index < tplHeader.NumOfTextures; ++index)
         {
             _logger.LogDebug(
-                "   Writing Texture Entry #{1} of {2}... (Offset: 0x{0})",
+                "   Writing Texture Entry #{Current} of {All}... (Offset: 0x{Offset})",
                 writeStream.Position,
                 index + 1,
                 tplHeader.NumOfTextures
@@ -649,28 +649,31 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         paletteData = [];
         tplFile.Seek(0L, SeekOrigin.Begin);
         byte[] buffer1 = new byte[4];
-        _logger.LogDebug("   Reading TPL Header: Magic... (Offset: 0x{0})", tplFile.Position);
+        _logger.LogDebug("   Reading TPL Header: Magic... (Offset: 0x{Offset})", tplFile.Position);
         tplFile.ReadExactly(buffer1);
         if ((int)Shared.Swap(BitConverter.ToUInt32(buffer1, 0)) != (int)tplHeader.TplMagic)
         {
             _logger.LogDebug(
-                "    -> Invalid Magic: 0x{0}",
+                "    -> Invalid Magic: 0x{Magic}",
                 Shared.Swap(BitConverter.ToUInt32(buffer1, 0))
             );
             throw new Exception("TPL Header: Invalid Magic!");
         }
         _logger.LogDebug(
-            "   Reading TPL Header: NumOfTextures... (Offset: 0x{0})",
+            "   Reading TPL Header: NumOfTextures... (Offset: 0x{Offset})",
             tplFile.Position
         );
         tplFile.ReadExactly(buffer1);
         tplHeader.NumOfTextures = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
-        _logger.LogDebug("   Reading TPL Header: Headersize... (Offset: 0x{0})", tplFile.Position);
+        _logger.LogDebug(
+            "   Reading TPL Header: Headersize... (Offset: 0x{Offset})",
+            tplFile.Position
+        );
         tplFile.ReadExactly(buffer1);
         if ((int)Shared.Swap(BitConverter.ToUInt32(buffer1, 0)) != (int)tplHeader.HeaderSize)
         {
             _logger.LogDebug(
-                "    -> Invalid Headersize: 0x{0}",
+                "    -> Invalid Headersize: 0x{Headersize}",
                 Shared.Swap(BitConverter.ToUInt32(buffer1, 0))
             );
             throw new Exception("TPL Header: Invalid Headersize!");
@@ -678,7 +681,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         for (int index = 0; index < tplHeader.NumOfTextures; ++index)
         {
             _logger.LogDebug(
-                "   Reading Texture Entry #{1} of {2}... (Offset: 0x{0})",
+                "   Reading Texture Entry #{Current} of {All}... (Offset: 0x{Offset})",
                 tplFile.Position,
                 index + 1,
                 tplHeader.NumOfTextures
@@ -693,7 +696,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         for (int index = 0; index < tplHeader.NumOfTextures; ++index)
         {
             _logger.LogDebug(
-                "   Reading Texture Header #{1} of {2}... (Offset: 0x{0})",
+                "   Reading Texture Header #{Current} of {All}... (Offset: 0x{Offset})",
                 tplFile.Position,
                 index + 1,
                 tplHeader.NumOfTextures
@@ -726,7 +729,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
             if (tplTextureEntries[index].PaletteHeaderOffset != 0U)
             {
                 _logger.LogDebug(
-                    "   Reading Palette Header #{1} of {2}... (Offset: 0x{0})",
+                    "   Reading Palette Header #{Current} of {All}... (Offset: 0x{Offset})",
                     tplFile.Position,
                     index + 1,
                     tplHeader.NumOfTextures
@@ -751,7 +754,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
             ];
             byte[] buffer3 = new byte[tplPaletteHeader.NumberOfItems * 2];
             _logger.LogDebug(
-                "   Reading Texture #{1} of {2}... (Offset: 0x{0})",
+                "   Reading Texture #{Current} of {All}... (Offset: 0x{Offset})",
                 tplFile.Position,
                 index + 1,
                 tplHeader.NumOfTextures
@@ -760,7 +763,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
             if (tplTextureEntries[index].PaletteHeaderOffset != 0U)
             {
                 _logger.LogDebug(
-                    "   Reading Palette #{1} of {2}... (Offset: 0x{0})",
+                    "   Reading Palette #{Current} of {All}... (Offset: 0x{Offset})",
                     tplFile.Position,
                     index + 1,
                     tplHeader.NumOfTextures
@@ -852,9 +855,8 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         }
     }
 
-    private byte[] ImageToTpl(ImageFrame img, TPL_TextureFormat tplFormat)
-    {
-        return tplFormat switch
+    private static byte[] ImageToTpl(ImageFrame img, TPL_TextureFormat tplFormat) =>
+        tplFormat switch
         {
             TPL_TextureFormat.I4 => ToI4(img),
             TPL_TextureFormat.I8 => ToI8(img),
@@ -868,9 +870,8 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
                 "Format not supported!\nCurrently, images can only be converted to the following formats:\nI4, I8, IA4, IA8, RGB565, RGB5A3, RGBA8, CI4, CI8 , CI14X2."
             ),
         };
-    }
 
-    private uint[] ImageToRgba(ImageFrame image)
+    private static uint[] ImageToRgba(ImageFrame image)
     {
         int width = (int)image.Columns;
         int height = (int)image.Rows;
@@ -922,7 +923,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         return pixels;
     }
 
-    private ImageFrame RgbaToImage(byte[] data, int width, int height)
+    private static ImageFrame RgbaToImage(byte[] data, int width, int height)
     {
         var image = new ImageFrame();
         image.Initialize(width, height, ColorspaceType.SRGB, true);
@@ -1025,7 +1026,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         return numArray;
     }
 
-    private int Avg(int w0, int w1, int c0, int c1)
+    private static int Avg(int w0, int w1, int c0, int c1)
     {
         int num1 = c0 >> 11;
         int num2 = c1 >> 11;
@@ -1040,7 +1041,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         return num7 | num10;
     }
 
-    private byte[] FromRGBA8(byte[] tpl, long width, long height)
+    private static byte[] FromRGBA8(byte[] tpl, long width, long height)
     {
         uint[] array = new uint[width * height];
         int num1 = 0;
@@ -1080,7 +1081,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         return Shared.UIntArrayToByteArray(array);
     }
 
-    private byte[] ToRGBA8(ImageFrame img)
+    private static byte[] ToRGBA8(ImageFrame img)
     {
         uint[] rgba = ImageToRgba(img);
         var width = img.Columns;
@@ -1190,7 +1191,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         return Shared.UIntArrayToByteArray(array);
     }
 
-    private byte[] ToRGB5A3(ImageFrame img)
+    private static byte[] ToRGB5A3(ImageFrame img)
     {
         uint[] rgba = ImageToRgba(img);
         long width = img.Columns;
@@ -1278,7 +1279,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         return Shared.UIntArrayToByteArray(array);
     }
 
-    private byte[] ToRGB565(ImageFrame img)
+    private static byte[] ToRGB565(ImageFrame img)
     {
         uint[] rgba = ImageToRgba(img);
         long width = img.Columns;
@@ -1319,7 +1320,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         return numArray;
     }
 
-    private byte[] FromI4(byte[] tpl, long width, long height)
+    private static byte[] FromI4(byte[] tpl, long width, long height)
     {
         uint[] array = new uint[width * height];
         int num1 = 0;
@@ -1353,7 +1354,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         return Shared.UIntArrayToByteArray(array);
     }
 
-    private byte[] ToI4(ImageFrame img)
+    private static byte[] ToI4(ImageFrame img)
     {
         uint[] rgba = ImageToRgba(img);
         long width = img.Columns;
@@ -1408,7 +1409,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         return numArray;
     }
 
-    private byte[] FromI8(byte[] tpl, long width, long height)
+    private static byte[] FromI8(byte[] tpl, long width, long height)
     {
         uint[] array = new uint[width * height];
         int num1 = 0;
@@ -1434,7 +1435,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         return Shared.UIntArrayToByteArray(array);
     }
 
-    private byte[] ToI8(ImageFrame img)
+    private static byte[] ToI8(ImageFrame img)
     {
         uint[] rgba = ImageToRgba(img);
         long width = img.Columns;
@@ -1474,7 +1475,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         return numArray;
     }
 
-    private byte[] FromIA4(byte[] tpl, long width, long height)
+    private static byte[] FromIA4(byte[] tpl, long width, long height)
     {
         uint[] array = new uint[width * height];
         int num1 = 0;
@@ -1502,7 +1503,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         return Shared.UIntArrayToByteArray(array);
     }
 
-    private byte[] ToIA4(ImageFrame img)
+    private static byte[] ToIA4(ImageFrame img)
     {
         uint[] rgba = ImageToRgba(img);
         long width = img.Columns;
@@ -1550,7 +1551,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         return numArray;
     }
 
-    private byte[] FromIA8(byte[] tpl, long width, long height)
+    private static byte[] FromIA8(byte[] tpl, long width, long height)
     {
         uint[] array = new uint[width * height];
         int num1 = 0;
@@ -1578,7 +1579,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         return Shared.UIntArrayToByteArray(array);
     }
 
-    private byte[] ToIA8(ImageFrame img)
+    private static byte[] ToIA8(ImageFrame img)
     {
         uint[] rgba = ImageToRgba(img);
         var width = img.Columns;
@@ -1629,7 +1630,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         return numArray1;
     }
 
-    private byte[] FromCI4(byte[] tpl, uint[] paletteData, long width, long height)
+    private static byte[] FromCI4(byte[] tpl, uint[] paletteData, long width, long height)
     {
         uint[] array = new uint[width * height];
         int num1 = 0;
@@ -1657,7 +1658,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         return Shared.UIntArrayToByteArray(array);
     }
 
-    private byte[] FromCI8(byte[] tpl, uint[] paletteData, long width, long height)
+    private static byte[] FromCI8(byte[] tpl, uint[] paletteData, long width, long height)
     {
         uint[] array = new uint[width * height];
         int num1 = 0;
@@ -1681,7 +1682,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         return Shared.UIntArrayToByteArray(array);
     }
 
-    private byte[] FromCI14X2(byte[] tpl, uint[] paletteData, long width, long height)
+    private static byte[] FromCI14X2(byte[] tpl, uint[] paletteData, long width, long height)
     {
         uint[] array = new uint[width * height];
         int num1 = 0;
@@ -1705,7 +1706,7 @@ public sealed class TPL(ILogger<TPL>? logger = null) : IDisposable
         return Shared.UIntArrayToByteArray(array);
     }
 
-    private byte[] FromCMP(byte[] tpl, long width, long height)
+    private static byte[] FromCMP(byte[] tpl, long width, long height)
     {
         uint[] array = new uint[width * height];
         ushort[] numArray1 = new ushort[4];

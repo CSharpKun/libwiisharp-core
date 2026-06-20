@@ -26,7 +26,7 @@ public static class Shared
 {
     public static string[] MergeStringArrays(string[] a, string[] b)
     {
-        List<string> stringList = new List<string>(a);
+        List<string> stringList = [.. a];
         foreach (string str in b)
         {
             if (!stringList.Contains(str))
@@ -35,7 +35,7 @@ public static class Shared
             }
         }
         stringList.Sort();
-        return stringList.ToArray();
+        return [.. stringList];
     }
 
     public static bool CompareByteArrays(
@@ -86,7 +86,7 @@ public static class Shared
             str = str + num.ToString("x2").ToUpper() + separator.ToString();
         }
 
-        return str.Remove(str.Length - 1);
+        return str[..^1];
     }
 
     public static byte[] HexStringToByteArray(string hexString)
@@ -160,24 +160,24 @@ public static class Shared
 
     public static byte[] UShortArrayToByteArray(ushort[] array)
     {
-        List<byte> byteList = new List<byte>();
+        List<byte> byteList = [];
         foreach (ushort num in array)
         {
             byte[] bytes = BitConverter.GetBytes(num);
             byteList.AddRange(bytes);
         }
-        return byteList.ToArray();
+        return [.. byteList];
     }
 
     public static byte[] UIntArrayToByteArray(uint[] array)
     {
-        List<byte> byteList = new List<byte>();
+        List<byte> byteList = [];
         foreach (uint num in array)
         {
             byte[] bytes = BitConverter.GetBytes(num);
             byteList.AddRange(bytes);
         }
-        return byteList.ToArray();
+        return [.. byteList];
     }
 
     public static uint[] ByteArrayToUIntArray(byte[] array)

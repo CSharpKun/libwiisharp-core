@@ -377,7 +377,11 @@ public class U8(ILogger<U8>? logger = null)
             }
             else
             {
-                _logger.LogDebug("   Node #{0} of {1} is a Directory...", index + 1, Nodes.Count);
+                _logger.LogDebug(
+                    "   Node #{Current} of {All} is a Directory...",
+                    index + 1,
+                    Nodes.Count
+                );
             }
         }
         while (memoryStream.Position % 16L != 0L)
@@ -440,7 +444,7 @@ public class U8(ILogger<U8>? logger = null)
 
     private void UnpackToDir(string saveDir)
     {
-        _logger.LogDebug("Unpacking U8 File to: {0}", saveDir);
+        _logger.LogDebug("Unpacking U8 File to: {Directory}", saveDir);
         if (!Directory.Exists(saveDir))
         {
             Directory.CreateDirectory(saveDir);
@@ -452,11 +456,11 @@ public class U8(ILogger<U8>? logger = null)
         int index1 = 0;
         for (int index2 = 0; index2 < Nodes.Count; ++index2)
         {
-            _logger.LogDebug("   Unpacking Entry #{0} of {1}", index2 + 1, Nodes.Count);
+            _logger.LogDebug("   Unpacking Entry #{Current} of {All}", index2 + 1, Nodes.Count);
 
             if (Nodes[index2].Type == U8_NodeType.Directory)
             {
-                _logger.LogDebug("    -> Directory: \"{0}\"", stringTable[index2]);
+                _logger.LogDebug("    -> Directory: \"{Directory}\"", stringTable[index2]);
                 if (strArray[index1][^1] != Path.DirectorySeparatorChar)
                 {
                     // ISSUE: explicit reference operation
@@ -469,8 +473,8 @@ public class U8(ILogger<U8>? logger = null)
             }
             else
             {
-                _logger.LogDebug("    -> File: \"{0}\"", stringTable[index2]);
-                _logger.LogDebug("    -> Size: {0} bytes", data[index2].Length);
+                _logger.LogDebug("    -> File: \"{FileName}\"", stringTable[index2]);
+                _logger.LogDebug("    -> Size: {BytesCount} bytes", data[index2].Length);
                 using FileStream fileStream = new(
                     strArray[index1] + Path.DirectorySeparatorChar.ToString() + stringTable[index2],
                     FileMode.Create
@@ -496,7 +500,7 @@ public class U8(ILogger<U8>? logger = null)
         _logger.LogDebug("   Detecting Header...");
         HeaderType = Headers.DetectHeader(u8File);
         Headers.HeaderType headerType = HeaderType;
-        _logger.LogDebug("    -> {0}", HeaderType.ToString());
+        _logger.LogDebug("    -> {HeaderType}", HeaderType.ToString());
         if (HeaderType == Headers.HeaderType.IMD5)
         {
             _logger.LogDebug("   Reading IMD5 Header...");
@@ -620,7 +624,7 @@ public class U8(ILogger<U8>? logger = null)
             u8File.ReadExactly(buffer1);
             u8Node.SizeOfData = Shared.Swap(BitConverter.ToUInt32(buffer1, 0));
             position2 = (int)u8File.Position;
-            _logger.LogDebug("        -> {0}", u8Node.Type.ToString());
+            _logger.LogDebug("        -> {HeaderType}", u8Node.Type);
             u8File.Seek(num + u8Node.OffsetToName, SeekOrigin.Begin);
             object[] objArray4 = new object[1];
             position1 = u8File.Position;
@@ -638,7 +642,7 @@ public class U8(ILogger<U8>? logger = null)
                     break;
                 }
             } while (empty.Length <= byte.MaxValue);
-            _logger.LogDebug("        -> {0}", empty);
+            _logger.LogDebug("        -> {BinaryName}", empty);
             if (u8Node.Type == U8_NodeType.File)
             {
                 u8File.Seek((long)headerType + u8Node.OffsetToData, SeekOrigin.Begin);
@@ -671,7 +675,7 @@ public class U8(ILogger<U8>? logger = null)
 
     private void CreateFromDir(string path)
     {
-        _logger.LogDebug("Creating U8 File from: {0}", path);
+        _logger.LogDebug("Creating U8 File from: {FilePath}", path);
         if (path[^1] != Path.DirectorySeparatorChar)
         {
             path += Path.DirectorySeparatorChar.ToString();
@@ -694,7 +698,7 @@ public class U8(ILogger<U8>? logger = null)
         RootNode.SizeOfData = (uint)(dirContent.Length + 1);
         for (int index1 = 0; index1 < dirContent.Length; ++index1)
         {
-            _logger.LogDebug("   Creating Node #{0} of {1}", index1 + 1, dirContent.Length);
+            _logger.LogDebug("   Creating Node #{Current} of {All}", index1 + 1, dirContent.Length);
 
             U8_Node u8Node = new();
             byte[] data = [];
@@ -756,7 +760,7 @@ public class U8(ILogger<U8>? logger = null)
         _logger.LogDebug("   Calculating Data Offsets...");
         for (int index = 0; index < Nodes.Count; ++index)
         {
-            _logger.LogDebug("    -> Node #{0} of {1}...", index + 1, Nodes.Count);
+            _logger.LogDebug("    -> Node #{Current} of {All}...", index + 1, Nodes.Count);
             int offsetToData = (int)Nodes[index].OffsetToData;
             Nodes[index].OffsetToData = (uint)(u8Header.OffsetToData + (ulong)offsetToData);
         }

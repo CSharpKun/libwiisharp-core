@@ -7,6 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Dameng.Logging.TUnit" Version="0.1.4" />
+    <PackageReference Include="Messerli.TempDirectory" Version="0.3.1" />
     <PackageReference Include="TUnit" Version="1.5*" />
   </ItemGroup>
 
@@ -14,5 +16,9 @@
     <Reference Include="libWiiSharp">
       <HintPath>../../libs/libWiiSharp.dll</HintPath>
     </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\LibWiiSharpCore\LibWiiSharpCore.csproj" />
   </ItemGroup>
 </Project>

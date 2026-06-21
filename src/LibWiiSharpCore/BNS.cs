@@ -157,6 +157,8 @@ public class BNS
     /// </summary>
     public void Convert()
     {
+        if (waveFile is null)
+            throw new NullReferenceException("Wave file is null");
         Convert(waveFile, loopFromWave);
     }
 
@@ -177,6 +179,8 @@ public class BNS
     {
         if (!converted)
         {
+            if (waveFile is null)
+                throw new NullReferenceException("Wave file is null");
             Convert(waveFile, loopFromWave);
         }
 

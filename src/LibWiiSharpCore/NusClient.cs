@@ -25,12 +25,13 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace LibWiiSharpCore;
 
+[Flags]
 public enum StoreType
 {
-    EncryptedContent,
-    DecryptedContent,
-    WAD,
-    All,
+    EncryptedContent = 1 << 0,
+    DecryptedContent = 1 << 1,
+    WAD = 1 << 2,
+    All = EncryptedContent | DecryptedContent | WAD,
 }
 
 public sealed class NusClient(HttpClient nusClient, ILogger<NusClient>? logger = null)
@@ -60,14 +61,14 @@ public sealed class NusClient(HttpClient nusClient, ILogger<NusClient>? logger =
         string outputDir,
         string titleId,
         string? titleVersion = null,
-        CancellationToken token = default,
-        params StoreType[] storeTypes
+        StoreType storeType = StoreType.All,
+        CancellationToken token = default
     )
     {
         if (titleId.Length != 16)
             throw new ArgumentException("Title ID must be 16 characters long!", nameof(titleId));
-        var nusUrl = await PrivNUSUp();
-        await DownloadTitle(outputDir, nusUrl, titleId, titleVersion, token, storeTypes);
+        var nusUrl = await PrivNUSUp(token);
+        await DownloadTitleViaUrl(outputDir, nusUrl, titleId, titleVersion, storeType, token);
     }
 
     /// <summary>
@@ -80,13 +81,13 @@ public sealed class NusClient(HttpClient nusClient, ILogger<NusClient>? logger =
     /// <param name="outputDir"></param>
     /// <param name="nusUrl"></param>
     /// <param name="storeTypes"></param>
-    public async Task DownloadTitle(
+    public async Task DownloadTitleViaUrl(
         string outputDir,
         string nusUrl,
         string titleId,
         string? titleVersion = null,
-        CancellationToken token = default,
-        params StoreType[] storeTypes
+        StoreType storeType = StoreType.All,
+        CancellationToken token = default
     )
     {
         if (titleId.Length != 16)
@@ -97,42 +98,30 @@ public sealed class NusClient(HttpClient nusClient, ILogger<NusClient>? logger =
             titleId,
             string.IsNullOrEmpty(titleVersion) ? "[Latest]" : titleVersion
         );
-        if (storeTypes.Length < 1)
-        {
-            _logger.LogDebug("  No store types were defined...");
-            throw new Exception("You must at least define one store type!");
-        }
         string str1 = string.Format("{0}{1}/", nusUrl, titleId);
-        bool flag1 = false;
-        bool flag2 = false;
-        bool flag3 = false;
 
-        for (int index = 0; index < storeTypes.Length; ++index)
+        bool flag1 = false,
+            flag2 = false,
+            flag3 = false;
+
+        if (storeType.HasFlag(StoreType.EncryptedContent))
         {
-            switch (storeTypes[index])
-            {
-                case StoreType.EncryptedContent:
-                    _logger.LogDebug("    -> Storing Encrypted Content...");
-                    flag1 = true;
-                    break;
-                case StoreType.DecryptedContent:
-                    _logger.LogDebug("    -> Storing Decrypted Content...");
-                    flag2 = true;
-                    break;
-                case StoreType.WAD:
-                    _logger.LogDebug("    -> Storing WAD...");
-                    flag3 = true;
-                    break;
-                case StoreType.All:
-                    _logger.LogDebug("    -> Storing Decrypted Content...");
-                    _logger.LogDebug("    -> Storing Encrypted Content...");
-                    _logger.LogDebug("    -> Storing WAD...");
-                    flag2 = true;
-                    flag1 = true;
-                    flag3 = true;
-                    break;
-            }
+            _logger.LogDebug("    -> Storing Encrypted Content...");
+            flag1 = true;
         }
+
+        if (storeType.HasFlag(StoreType.DecryptedContent))
+        {
+            _logger.LogDebug("    -> Storing Decrypted Content...");
+            flag2 = true;
+        }
+
+        if (storeType.HasFlag(StoreType.WAD))
+        {
+            _logger.LogDebug("    -> Storing WAD...");
+            flag3 = true;
+        }
+
         if (ContinueWithoutTicket == true)
         {
             flag2 = false;
@@ -144,10 +133,7 @@ public sealed class NusClient(HttpClient nusClient, ILogger<NusClient>? logger =
             outputDir += Path.DirectorySeparatorChar.ToString();
         }
 
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
+        Directory.CreateDirectory(outputDir);
 
         string str2 =
             "tmd" + (string.IsNullOrEmpty(titleVersion) ? string.Empty : "." + titleVersion);
@@ -214,43 +200,25 @@ public sealed class NusClient(HttpClient nusClient, ILogger<NusClient>? logger =
                 tmd.Contents[index1].Size
             );
 
+            var x8ContentId = tmd.Contents[index1].ContentID.ToString("x8");
+
             if (UseLocalFiles)
             {
-                string str3 = outputDir;
-                contentId = tmd.Contents[index1].ContentID;
-                string str4 = contentId.ToString("x8");
-                if (File.Exists(str3 + str4))
+                if (File.Exists(outputDir + x8ContentId))
                 {
                     _logger.LogDebug("   Using Local File, Skipping...");
                     continue;
                 }
             }
-            try
-            {
-                string str3 = str1;
-                contentId = tmd.Contents[index1].ContentID;
-                string str4 = contentId.ToString("x8");
-                string address = str3 + str4;
-                string str5 = outputDir;
-                contentId = tmd.Contents[index1].ContentID;
-                string str6 = contentId.ToString("x8");
-                string fileName = str5 + str6;
-                await DownloadFile(address, fileName, token);
-                string[] strArray2 = strArray1;
-                int index2 = index1;
-                contentId = tmd.Contents[index1].ContentID;
-                string str7 = contentId.ToString("x8");
-                strArray2[index2] = str7;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(
-                    "   Downloading Content #{Number} of {All} failed...",
-                    index1 + 1,
-                    tmd.NumOfContents
-                );
-                throw new Exception("Downloading Content Failed:\n" + ex.Message);
-            }
+
+            string address = str1 + x8ContentId;
+            string fileName = outputDir + x8ContentId;
+            await DownloadFile(address, fileName, token);
+            string[] strArray2 = strArray1;
+            int index2 = index1;
+            contentId = tmd.Contents[index1].ContentID;
+            string str7 = contentId.ToString("x8");
+            strArray2[index2] = str7;
         }
         if (flag2 | flag3)
         {
@@ -371,7 +339,7 @@ public sealed class NusClient(HttpClient nusClient, ILogger<NusClient>? logger =
         if (titleId.Length != 16)
             throw new ArgumentException("Title ID must be 16 characters long!", nameof(titleId));
         var nusUrl = await PrivNUSUp(token);
-        return await DownloadTMD(titleId, titleVersion, nusUrl, token);
+        return await DownloadTMDViaUrl(titleId, titleVersion, nusUrl, token);
     }
 
     /// <summary>
@@ -383,7 +351,7 @@ public sealed class NusClient(HttpClient nusClient, ILogger<NusClient>? logger =
     /// <param name="titleVersion"></param>
     /// <param name="nusUrl"></param>
     /// <returns></returns>
-    public async Task<TMD?> DownloadTMD(
+    public async Task<TMD?> DownloadTMDViaUrl(
         string titleId,
         string titleVersion,
         string nusUrl,
@@ -415,7 +383,7 @@ public sealed class NusClient(HttpClient nusClient, ILogger<NusClient>? logger =
         if (titleId.Length != 16)
             throw new ArgumentException("Title ID must be 16 characters long!", nameof(titleId));
         var nusUrl = await PrivNUSUp(token);
-        return await DownloadTicket(titleId, nusUrl, token);
+        return await DownloadTicketViaUrl(titleId, nusUrl, token);
     }
 
     /// <summary>
@@ -425,7 +393,7 @@ public sealed class NusClient(HttpClient nusClient, ILogger<NusClient>? logger =
     /// <param name="titleId"></param>
     /// <param name="nusUrl"></param>
     /// <returns></returns>
-    public async Task<Ticket?> DownloadTicket(
+    public async Task<Ticket?> DownloadTicketViaUrl(
         string titleId,
         string nusUrl,
         CancellationToken token = default
@@ -459,7 +427,7 @@ public sealed class NusClient(HttpClient nusClient, ILogger<NusClient>? logger =
         if (titleId.Length != 16)
             throw new ArgumentException("Title ID must be 16 characters long!", nameof(titleId));
         var nusUrl = await PrivNUSUp(token);
-        await DownloadAndSaveSingleContent(
+        await DownloadAndSaveSingleContentViaUrl(
             contentId,
             savePath,
             nusUrl,
@@ -479,7 +447,7 @@ public sealed class NusClient(HttpClient nusClient, ILogger<NusClient>? logger =
     /// <param name="contentId"></param>
     /// <param name="savePath"></param>
     /// <param name="nusUrl"></param>
-    public async Task DownloadAndSaveSingleContent(
+    public async Task DownloadAndSaveSingleContentViaUrl(
         string contentId,
         string savePath,
         string nusUrl,
@@ -496,7 +464,7 @@ public sealed class NusClient(HttpClient nusClient, ILogger<NusClient>? logger =
         File.Delete(savePath);
 
         byte[] bytes =
-            await DownloadSingleContent(contentId, nusUrl, titleId, titleVersion, token)
+            await DownloadSingleContentViaUrl(contentId, nusUrl, titleId, titleVersion, token)
             ?? throw new NullReferenceException();
         File.WriteAllBytes(savePath, bytes);
     }
@@ -521,7 +489,7 @@ public sealed class NusClient(HttpClient nusClient, ILogger<NusClient>? logger =
         if (titleId.Length != 16)
             throw new ArgumentException("Title ID must be 16 characters long!", nameof(titleId));
         var nusUrl = await PrivNUSUp(token);
-        return await DownloadSingleContent(contentId, nusUrl, titleId, titleVersion, token);
+        return await DownloadSingleContentViaUrl(contentId, nusUrl, titleId, titleVersion, token);
     }
 
     /// <summary>
@@ -538,7 +506,7 @@ public sealed class NusClient(HttpClient nusClient, ILogger<NusClient>? logger =
     /// <exception cref="Exception"></exception>
     /// <exception cref="Exception"></exception>
     /// <exception cref="Exception"></exception>
-    public async Task<byte[]?> DownloadSingleContent(
+    public async Task<byte[]?> DownloadSingleContentViaUrl(
         string contentId,
         string nusUrl,
         string titleId,
@@ -675,7 +643,6 @@ public sealed class NusClient(HttpClient nusClient, ILogger<NusClient>? logger =
         const string WiiEndpoint = "http://nus.cdn.shop.wii.com/ccs/download/";
         const string WiiUEndpoint = "http://ccs.cdn.wup.shop.nintendo.net/ccs/download/";
         const string DSiEndpoint = "http://nus.cdn.t.shop.nintendowifi.net/ccs/download/";
-        const string RC24Endpoint = "http://ccs.cdn.sho.rc24.xyz/ccs/download/";
 
         // Wii Endpoint
 
@@ -693,11 +660,6 @@ public sealed class NusClient(HttpClient nusClient, ILogger<NusClient>? logger =
         response = await nusClient.GetAsync(DSiEndpoint, token);
         if (response.StatusCode is HttpStatusCode.Unauthorized)
             return DSiEndpoint;
-
-        // RC24 Endpoint
-        response = await nusClient.GetAsync(RC24Endpoint, token);
-        if (response.StatusCode is HttpStatusCode.Unauthorized)
-            return RC24Endpoint;
 
         throw new Exception("Unable to verify any online NUS server!");
     }
